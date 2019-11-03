@@ -1,0 +1,28 @@
+[package]
+name = "alerter"
+description = "Send messages to Slack"
+version = "0.1.0"
+authors = ["jan.veen@posteo.de"]
+edition = "2018"
+license = "GPL-3.0-or-later"
+
+[profile.release]
+lto = true
+
+[dependencies]
+clap = "2.27.0"
+log = "0.4"
+serde_derive = "1.0"
+serde_yaml = "0.8.7"
+serde_json = "1.0.40"
+reqwest = "0.9.19"
+nix = "0.15.0"
+
+[dependencies.serde]
+version = "1.0.80"
+features = ["derive"]
+
+[dependencies.log4rs]
+version = "0.8.1"
+default-features = false
+features = ["file", "pattern_encoder", "console_appender"]

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../.."
+CWD=$(pwd)
+
+rm -rf $ROOT/pkg/Archlinux/{pkg,src,package.tar}
+
+tar -cvf $ROOT/pkg/Archlinux/package.tar \
+        --exclude-vcs \
+        --exclude=target \
+        $ROOT
+
+cd $ROOT/pkg/Archlinux
+makepkg -fc
+cd $CWD
+
+if [[ -z $NO_SIGNATURE ]] ; then
+    gpg --detach-sign --use-agent $ROOT/pkg/Archlinux/*.xz
+fi
+
+rm -rf $ROOT/pkg/Archlinux/{pkg,src,package.tar}

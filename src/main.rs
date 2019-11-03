@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+pub mod alert_cli_parser;
 pub mod cli_parser;
 pub mod config;
 pub mod daemon;

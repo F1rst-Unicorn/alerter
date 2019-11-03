@@ -18,50 +18,70 @@
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Message {
     pub channel: Option<String>,
 
     pub username: Option<String>,
 
-    pub text: String,
+    pub text: Option<String>,
 
     pub icon_emoji: Option<String>,
 
     pub attachments: Option<Vec<Attachment>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Attachment {
-    pub fallback: String,
+    pub fallback: Option<String>,
 
-    pub color: String,
+    pub color: Option<String>,
 
-    pub pretext: String,
+    pub pretext: Option<String>,
 
-    pub author_name: String,
+    pub author_name: Option<String>,
 
-    pub author_link: String,
+    pub author_link: Option<String>,
 
-    pub author_icon: String,
+    pub author_icon: Option<String>,
 
-    pub title: String,
+    pub title: Option<String>,
 
-    pub title_link: String,
+    pub title_link: Option<String>,
 
-    pub text: String,
+    pub text: Option<String>,
 
-    pub fields: Vec<Field>,
+    pub fields: Option<Vec<Field>>,
 
-    pub image_url: String,
+    pub image_url: Option<String>,
 
-    pub thumb_url: String,
+    pub thumb_url: Option<String>,
 
-    pub footer: String,
+    pub footer: Option<String>,
 
-    pub footer_icon: String,
+    pub footer_icon: Option<String>,
 
-    pub ts: u64,
+    pub ts: Option<i64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum Level {
+    OK,
+    WARN,
+    ERROR,
+    UNKNOWN,
+}
+
+impl Level {
+    pub fn into_string(self) -> String {
+        match self {
+            Level::OK => "#44bb77",
+            Level::WARN => "#ffaa44",
+            Level::ERROR => "#ff5566",
+            _ => "#aa44ff",
+        }
+        .to_string()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

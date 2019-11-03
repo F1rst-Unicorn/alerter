@@ -49,9 +49,7 @@ pub fn parse_config(file_path: &str) -> Config {
             error!("Could not parse config: {:#?}", e);
             exit(EXIT_CODE);
         }
-        Ok(r) => {
-            r
-        }
+        Ok(r) => r,
     }
 }
 

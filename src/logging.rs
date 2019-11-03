@@ -23,7 +23,7 @@ use log::LevelFilter;
 
 pub fn initialise(verbosity_level: u64) {
     let stdout = log4rs::append::console::ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{level} {M} {m}{n}")))
+        .encoder(Box::new(PatternEncoder::new("{level} {m}{n}")))
         .build();
 
     let level = match verbosity_level {

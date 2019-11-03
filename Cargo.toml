@@ -6,6 +6,14 @@ authors = ["jan.veen@posteo.de"]
 edition = "2018"
 license = "GPL-3.0-or-later"
 
+[[bin]]
+name = "alerter"
+path = "src/main.rs"
+
+[[bin]]
+name = "alert"
+path = "src/alert.rs"
+
 [profile.release]
 lto = true
 
@@ -17,6 +25,7 @@ serde_yaml = "0.8.7"
 serde_json = "1.0.40"
 reqwest = "0.9.19"
 nix = "0.15.0"
+chrono = "0.4.6"
 
 [dependencies.serde]
 version = "1.0.80"

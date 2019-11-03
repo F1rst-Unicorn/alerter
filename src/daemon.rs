@@ -92,7 +92,7 @@ impl Daemon {
         match epoll_result {
             Ok(0) => {}
             Ok(count) => {
-                debug!("Got {} events", count);
+                debug!("epoll got {} events", count);
                 for event in event_buffer.iter().take(count) {
                     self.handle_event(*event);
                 }

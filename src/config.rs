@@ -30,7 +30,22 @@ const EXIT_CODE: i32 = 1;
 pub struct Config {
     pub socket_path: String,
 
+    pub spool_path: Option<String>,
+
     pub webhook: Option<String>,
+}
+
+impl Config {
+    pub fn validate(&self) {
+        if self.webhook.is_none() {
+            error!("No webhook configured");
+            exit(EXIT_CODE);
+        }
+        if self.spool_path.is_none() {
+            error!("No spool_path configured");
+            exit(EXIT_CODE);
+        }
+    }
 }
 
 pub fn parse_config(file_path: &str) -> Config {

@@ -16,18 +16,18 @@
  */
 
 pub mod alert_cli_parser;
+pub mod backoff;
 pub mod cli_parser;
 pub mod config;
 pub mod daemon;
 pub mod logging;
 pub mod message;
 pub mod slack;
+pub mod spooler;
 
 use daemon::Daemon;
-use log::{debug, error};
+use log::debug;
 use slack::Slack;
-
-use std::process::exit;
 
 fn main() {
     let arguments = cli_parser::parse_arguments();
@@ -41,15 +41,11 @@ fn main() {
     debug!("Config is at {}", config_path);
 
     let config = config::parse_config(config_path);
-
-    if config.webhook.is_none() {
-        error!("No webhook configured");
-        exit(1);
-    }
+    config.validate();
 
     let slack = Slack::new(config.webhook.unwrap());
 
-    let mut daemon = Daemon::new(&config.socket_path, slack);
+    let mut daemon = Daemon::new(&config.socket_path, &config.spool_path.unwrap(), slack);
 
     daemon.run();
 }

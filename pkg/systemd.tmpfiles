@@ -1,1 +1,2 @@
 d /var/lib/alerter 0750 alerter alerter - -
+d /var/lib/alerter/spool 0750 alerter alerter - -

@@ -32,12 +32,18 @@ use std::process::exit;
 
 use log::{debug, error, info, warn};
 
+use crate::backoff::Backoff;
 use crate::message::Message;
 use crate::slack::Slack;
+use crate::spooler::Spooler;
 
 const EXIT_CODE: i32 = 2;
 
 pub struct Daemon {
+    spooler: Spooler,
+
+    backoff: Backoff,
+
     socket_fd: RawFd,
 
     epoll_fd: RawFd,
@@ -50,7 +56,7 @@ pub struct Daemon {
 }
 
 impl Daemon {
-    pub fn new(socket_path: &str, slack: Slack) -> Self {
+    pub fn new(socket_path: &str, spool_path: &str, slack: Slack) -> Self {
         let signal_fd = Daemon::setup_signal_handler();
         if let Err(e) = signal_fd {
             error!("Could not setup signals: {}", e);
@@ -72,7 +78,11 @@ impl Daemon {
         }
         let epoll_fd = epoll_fd.unwrap();
 
+        let spooler = Spooler::new(spool_path);
+
         Daemon {
+            spooler,
+            backoff: Backoff::new(),
             socket_fd,
             epoll_fd,
             signal_fd,
@@ -85,6 +95,7 @@ impl Daemon {
         info!("Ready for connections");
         while self.keep_running {
             self.dispatch_epoll();
+            self.flush_spooler();
         }
         info!("Shutting down");
     }
@@ -121,13 +132,13 @@ impl Daemon {
         }
     }
 
-    fn handle_request(&self) {
+    fn handle_request(&mut self) {
         if let Err(e) = self.handle_request_internally() {
             warn!("Failed to handle request: {:#?}", e);
         }
     }
 
-    fn handle_request_internally(&self) -> Result<(), nix::Error> {
+    fn handle_request_internally(&mut self) -> Result<(), nix::Error> {
         let file = unsafe { std::fs::File::from_raw_fd(socket::accept(self.socket_fd)?) };
 
         let message: Result<Message, serde_json::error::Error> = serde_json::from_reader(file);
@@ -138,9 +149,42 @@ impl Daemon {
         let message = message.unwrap();
 
         if let Err(e) = self.slack.send(&message) {
-            warn!("Could not send message: {:#?}", e);
+            warn!("Could not send message, queuing. Reason: {:#?}", e);
+            self.spooler.queue(message);
+            self.spooler.store();
         }
         Ok(())
+    }
+
+    fn flush_spooler(&mut self) {
+        let mut sent_messages = false;
+
+        if !self.spooler.is_empty() {
+            if self.backoff.is_ready() {
+                while let Some(m) = self.spooler.pop_message() {
+                    warn!("Retransmitting message");
+                    if let Err(e) = self.slack.send(&m) {
+                        warn!(
+                            "Could not send queued message, queuing again. Reason: {:#?}",
+                            e
+                        );
+                        self.spooler.queue_front(m);
+                        self.backoff.backoff();
+                        break;
+                    } else {
+                        info!("Queued message released");
+                        sent_messages = true;
+                        self.backoff.reset();
+                    }
+                }
+            } else {
+                self.backoff.inc();
+            }
+        }
+
+        if sent_messages {
+            self.spooler.store();
+        }
     }
 
     fn handle_signal(&mut self) {

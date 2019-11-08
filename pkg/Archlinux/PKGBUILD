@@ -6,11 +6,10 @@ pkgdesc="Alerter to Slack"
 arch=('x86_64')
 url="https://gitlab.com/veenj/alerter"
 license=('GPL3')
-depends=()
 makedepends=('rust')
-backup=('etc/alerter.yml')
 source=('http://www.do.not.use.com/package.tar')
 sha512sums=('SKIP')
+backup=('etc/alert.yml')
 
 build() {
     cd "$srcdir"
@@ -30,5 +29,8 @@ package() {
     install -D -m 755 target/release/alerter $pkgdir/usr/bin/alerter
     install -D -m 755 target/release/alert $pkgdir/usr/bin/alert
     install -D -m 644 pkg/config.yml $pkgdir/etc/alerter.yml
+    install -D -m 644 pkg/config-client.yml $pkgdir/etc/alert.yml
     install -D -m 644 pkg/systemd.service $pkgdir/usr/lib/systemd/system/alerter.service
+    install -D -m 644 pkg/systemd.sysusers $pkgdir/usr/lib/sysusers.d/${pkgname}.conf
+    install -D -m 644 pkg/systemd.tmpfiles $pkgdir/usr/lib/tmpfiles.d/${pkgname}.conf
 }

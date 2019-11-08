@@ -13,11 +13,12 @@ tar -cvf $ROOT/pkg/Archlinux/package.tar \
         $ROOT
 
 cd $ROOT/pkg/Archlinux
-makepkg -fc
-cd $CWD
 
 if [[ -z $NO_SIGNATURE ]] ; then
-    gpg --detach-sign --use-agent $ROOT/pkg/Archlinux/*.xz
+    makepkg -fc --sign
+else
+    makepkg -fc
 fi
 
+cd $CWD
 rm -rf $ROOT/pkg/Archlinux/{pkg,src,package.tar}

@@ -30,7 +30,7 @@ const EXIT_CODE: i32 = 1;
 pub struct Config {
     pub socket_path: String,
 
-    pub webhook: String,
+    pub webhook: Option<String>,
 }
 
 pub fn parse_config(file_path: &str) -> Config {

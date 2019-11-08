@@ -51,7 +51,7 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
                 .value_name("PATH")
                 .help("The config file or directory to run with")
                 .takes_value(true)
-                .default_value("/etc/alerter.yml"),
+                .default_value("/etc/alert.yml"),
         )
         .arg(
             Arg::with_name(FLAG_CHANNEL)

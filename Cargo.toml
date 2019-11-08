@@ -26,6 +26,7 @@ serde_json = "1.0.40"
 reqwest = "0.9.19"
 nix = "0.15.0"
 chrono = "0.4.6"
+libc = "0.2.65"
 
 [dependencies.serde]
 version = "1.0.80"

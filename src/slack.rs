@@ -26,6 +26,8 @@ pub struct Slack {
 
 #[derive(Debug)]
 pub enum Error {
+    ReqwestError(reqwest::Error),
+
     StatusCode(u16),
 
     General(reqwest::Error),
@@ -38,7 +40,11 @@ impl Slack {
 
     pub fn send(&self, message: &Message) -> Result<(), Error> {
         debug!("Sending message");
-        let client = reqwest::Client::new();
+
+        let client = reqwest::Client::builder()
+            .build()
+            .map_err(Error::ReqwestError)?;
+
         let response = client.post(&self.webhook_url).json(message).send();
 
         match response {

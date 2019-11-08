@@ -5,6 +5,18 @@ After=network.target network-online.target nss-lookup.target
 [Service]
 Type=simple
 ExecStart=/usr/bin/alerter
+User=alerter
+Group=alerter
+WorkingDirectory=/var/lib/alerter
+NoNewPrivileges=true
+
+LimitNOFILE=20
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+SystemCallFilter=~@cpu-emulation @keyring @module @obsolete @raw-io
 
 [Install]
 WantedBy=multi-user.target

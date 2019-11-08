@@ -15,11 +15,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use nix::errno;
 use nix::sys::epoll;
 use nix::sys::signal;
 use nix::sys::signalfd;
 use nix::sys::socket;
+use nix::sys::stat;
 
+use std::ffi::CString;
 use std::fs::remove_file;
 use std::io::Error;
 use std::os::unix::io::AsRawFd;
@@ -194,6 +197,21 @@ impl Daemon {
             listener,
             &socket::SockAddr::Unix(socket::UnixAddr::new(socket_path)?),
         )?;
+
+        let mut flags = stat::Mode::empty();
+        flags.insert(stat::Mode::S_IRWXU);
+        flags.insert(stat::Mode::S_IRWXG);
+        flags.insert(stat::Mode::S_IRWXO);
+        stat::fchmod(listener, flags)?;
+
+        unsafe {
+            let raw_path = CString::new(socket_path).expect("could not build cstring");
+            let res = libc::chmod(raw_path.into_raw(), 0o777);
+            if res == -1 {
+                return Err(nix::Error::Sys(errno::Errno::from_i32(errno::errno())));
+            }
+        }
+
         socket::listen(listener, 0)?;
 
         debug!("Input uds open");

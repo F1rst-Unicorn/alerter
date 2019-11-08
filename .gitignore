@@ -1,2 +1,6 @@
 /target
 **/*.rs.bk
+
+pkg/Archlinux/*.tar*
+pkg/Archlinux/src
+pkg/Archlinux/pkg

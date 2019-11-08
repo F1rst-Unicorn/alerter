@@ -24,8 +24,10 @@ pub mod message;
 pub mod slack;
 
 use daemon::Daemon;
-use log::debug;
+use log::{debug, error};
 use slack::Slack;
+
+use std::process::exit;
 
 fn main() {
     let arguments = cli_parser::parse_arguments();
@@ -40,7 +42,12 @@ fn main() {
 
     let config = config::parse_config(config_path);
 
-    let slack = Slack::new(config.webhook);
+    if config.webhook.is_none() {
+        error!("No webhook configured");
+        exit(1);
+    }
+
+    let slack = Slack::new(config.webhook.unwrap());
 
     let mut daemon = Daemon::new(&config.socket_path, slack);
 

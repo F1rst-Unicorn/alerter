@@ -7,8 +7,6 @@ arch=('x86_64')
 url="https://gitlab.com/veenj/alerter"
 license=('GPL3')
 makedepends=('rust')
-source=('http://www.do.not.use.com/package.tar')
-sha512sums=('SKIP')
 backup=('etc/alert.yml')
 
 build() {

@@ -15,7 +15,7 @@ dependencies = [
 
 [[package]]
 name = "alerter"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "chrono 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",

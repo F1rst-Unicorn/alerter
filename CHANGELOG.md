@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.1]
+
+### Fixed
+
+* Don't truncate custom field values containing `:`
+
 ## [1.0.0]
 
 ### Added

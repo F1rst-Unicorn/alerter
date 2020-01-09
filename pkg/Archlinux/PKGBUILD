@@ -1,6 +1,6 @@
 # Maintainer: Jan Veen <jan.veen æt posteo.de>
 pkgname=alerter
-pkgver=1.0.0
+pkgver=1.0.1
 pkgrel=1
 pkgdesc="Alerter to Slack"
 arch=('x86_64')

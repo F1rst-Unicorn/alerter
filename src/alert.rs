@@ -96,7 +96,7 @@ fn parse_additional_fields(values: Option<clap::Values>) -> Option<Vec<Field>> {
     let mut fields = Vec::new();
     if let Some(values) = values {
         for item in values {
-            let mut split = item.split(':');
+            let mut split = item.splitn(2, ':');
             if let Some(key) = split.next() {
                 if let Some(value) = split.next() {
                     let field = Field {

@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ## Added
 
+* Version information now contains the commit hash and date of the build
+
 * Inform systemd when service is ready
 
 ### Maintenance

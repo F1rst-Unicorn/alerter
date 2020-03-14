@@ -5,6 +5,7 @@ version = "1.0.2"
 authors = ["jan.veen@posteo.de"]
 edition = "2018"
 license = "GPL-3.0-or-later"
+build = "build.rs"
 
 [[bin]]
 name = "alerter"
@@ -43,3 +44,6 @@ features = ["json"]
 version = "0.11"
 default-features = false
 features = ["file", "pattern_encoder", "console_appender"]
+
+[build-dependencies]
+vergen = "3"

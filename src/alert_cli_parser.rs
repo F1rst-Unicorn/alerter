@@ -30,7 +30,13 @@ pub const FLAG_FIELD: &str = "FIELD";
 
 pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
     let app = App::new("alert")
-        .version(env!("CARGO_PKG_VERSION"))
+        .version(concat!(
+            env!("CARGO_PKG_VERSION"),
+            " ",
+            env!("VERGEN_SHA"),
+            " ",
+            env!("VERGEN_BUILD_TIMESTAMP")
+        ))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
             Arg::with_name(FLAG_TITLE)

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## Added
+
+* Inform systemd when service is ready
+
 ### Maintenance
 
 * Update dependencies

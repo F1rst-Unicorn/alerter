@@ -22,6 +22,8 @@ use nix::sys::signalfd;
 use nix::sys::socket;
 use nix::sys::stat;
 
+use systemd::daemon::notify;
+
 use std::ffi::CString;
 use std::fs::remove_file;
 use std::io::Error;
@@ -29,6 +31,7 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::io::FromRawFd;
 use std::os::unix::io::RawFd;
 use std::process::exit;
+use std::convert::TryFrom;
 
 use log::{debug, error, info, warn};
 
@@ -93,6 +96,7 @@ impl Daemon {
 
     pub fn run(&mut self) {
         info!("Ready for connections");
+        notify_systemd(&[("READY", "1")]);
         while self.keep_running {
             self.dispatch_epoll();
             self.flush_spooler();
@@ -190,7 +194,7 @@ impl Daemon {
     fn handle_signal(&mut self) {
         match self.signal_fd.read_signal() {
             Ok(Some(signal)) => {
-                match signal::Signal::from_c_int(signal.ssi_signo as i32).unwrap() {
+                match signal::Signal::try_from(signal.ssi_signo as i32).unwrap() {
                     signal::SIGINT | signal::SIGQUIT | signal::SIGTERM => {
                         self.initiate_shutdown();
                     }
@@ -211,6 +215,7 @@ impl Daemon {
     fn initiate_shutdown(&mut self) {
         info!("Received termination signal");
         self.keep_running = false;
+        notify_systemd(&[("STOPPING", "1")]);
     }
 
     fn setup_signal_handler() -> Result<signalfd::SignalFd, nix::Error> {
@@ -278,6 +283,15 @@ impl Daemon {
             &mut epoll::EpollEvent::new(epoll::EpollFlags::EPOLLIN, socket as u64),
         )?;
         Ok(epoll_fd)
+    }
+}
+
+fn notify_systemd(message: &[(&str, &str)]) {
+    let result = notify(false, message.iter());
+    match result {
+        Ok(false) => warn!("systemd hasn't been notified"),
+        Err(e) => error!("error notifying systemd: {}", e),
+        _ => ()
     }
 }
 

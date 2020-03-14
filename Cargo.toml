@@ -16,6 +16,8 @@ path = "src/alert.rs"
 
 [profile.release]
 lto = true
+opt-level = "s"
+codegen-units = 1
 
 [dependencies]
 clap = "2.27.0"
@@ -23,14 +25,19 @@ log = "0.4"
 serde_derive = "1.0"
 serde_yaml = "0.8.7"
 serde_json = "1.0.40"
-reqwest = "0.10"
 nix = "0.17"
 chrono = "0.4.6"
 libc = "0.2.65"
+systemd = "0.4"
+futures = "0.3"
 
 [dependencies.serde]
 version = "1.0.80"
 features = ["derive"]
+
+[dependencies.reqwest]
+version = "0.10"
+features = ["json"]
 
 [dependencies.log4rs]
 version = "0.11"

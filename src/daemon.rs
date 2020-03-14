@@ -24,6 +24,7 @@ use nix::sys::stat;
 
 use systemd::daemon::notify;
 
+use std::convert::TryFrom;
 use std::ffi::CString;
 use std::fs::remove_file;
 use std::io::Error;
@@ -31,7 +32,6 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::io::FromRawFd;
 use std::os::unix::io::RawFd;
 use std::process::exit;
-use std::convert::TryFrom;
 
 use log::{debug, error, info, warn};
 
@@ -193,16 +193,14 @@ impl Daemon {
 
     fn handle_signal(&mut self) {
         match self.signal_fd.read_signal() {
-            Ok(Some(signal)) => {
-                match signal::Signal::try_from(signal.ssi_signo as i32).unwrap() {
-                    signal::SIGINT | signal::SIGQUIT | signal::SIGTERM => {
-                        self.initiate_shutdown();
-                    }
-                    other => {
-                        debug!("Received unknown signal: {:?}", other);
-                    }
+            Ok(Some(signal)) => match signal::Signal::try_from(signal.ssi_signo as i32).unwrap() {
+                signal::SIGINT | signal::SIGQUIT | signal::SIGTERM => {
+                    self.initiate_shutdown();
                 }
-            }
+                other => {
+                    debug!("Received unknown signal: {:?}", other);
+                }
+            },
             Ok(None) => {
                 debug!("No signal received");
             }
@@ -291,7 +289,7 @@ fn notify_systemd(message: &[(&str, &str)]) {
     match result {
         Ok(false) => warn!("systemd hasn't been notified"),
         Err(e) => error!("error notifying systemd: {}", e),
-        _ => ()
+        _ => (),
     }
 }
 

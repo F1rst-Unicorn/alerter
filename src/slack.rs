@@ -16,8 +16,8 @@
  */
 
 use crate::message::Message;
-use reqwest;
 use futures::executor::block_on;
+use reqwest;
 
 use log::{debug, warn};
 

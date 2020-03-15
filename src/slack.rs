@@ -16,7 +16,6 @@
  */
 
 use crate::message::Message;
-use futures::executor::block_on;
 use reqwest;
 
 use log::{debug, warn};
@@ -42,12 +41,11 @@ impl Slack {
     pub fn send(&self, message: &Message) -> Result<(), Error> {
         debug!("Sending message");
 
-        let client = reqwest::Client::builder()
+        let client = reqwest::blocking::Client::builder()
             .build()
             .map_err(Error::ReqwestError)?;
 
         let response = client.post(&self.webhook_url).json(message).send();
-        let response = block_on(response);
 
         match response {
             Ok(r) => match r.status().as_u16() {

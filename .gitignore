@@ -3,3 +3,6 @@
 
 pkg/Archlinux/*.tar*
 pkg/Archlinux/pkg
+
+config.yml
+alert-config.yml

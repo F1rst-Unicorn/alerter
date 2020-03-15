@@ -8,8 +8,9 @@ ExecStart=/usr/bin/alerter
 User=alerter
 Group=alerter
 WorkingDirectory=/var/lib/alerter
-NoNewPrivileges=true
+Restart=on-failure
 
+NoNewPrivileges=true
 LimitNOFILE=20
 ProtectSystem=full
 ProtectHome=true

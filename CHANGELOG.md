@@ -2,9 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4]
+
+### Fixed
+
+* Fix crash on message transmission
+
 ## [1.0.3]
 
-## Added
+### Added
 
 * Version information now contains the commit hash and date of the build
 

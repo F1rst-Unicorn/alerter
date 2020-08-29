@@ -16,7 +16,6 @@
  */
 
 use crate::message::Message;
-use reqwest;
 
 use log::{debug, warn};
 

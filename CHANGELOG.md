@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 * Add system tests
 
+* Configure logging via file
+
+* Move config files into own `/etc` subdirectory
+
 ## [1.0.6]
 
 ### Maintenance

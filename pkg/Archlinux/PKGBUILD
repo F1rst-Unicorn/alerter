@@ -2,12 +2,16 @@
 pkgname=alerter
 pkgver=1.0.6
 pkgrel=1
-pkgdesc="Alerter to Slack"
+pkgdesc="Send messages to Slack"
 arch=('x86_64')
-url="https://gitlab.com/veenj/alerter"
+url="https://gitlab.com/veenj/$pkgname"
 license=('GPL3')
+changelog=../../CHANGELOG.md
 makedepends=('rust')
-backup=('etc/alert.yml')
+backup=("etc/$pkgname/$pkgname.yml"
+        "etc/$pkgname/alert.yml"
+        "etc/$pkgname/log4rs.yml")
+depends=('systemd-libs')
 
 build() {
     cd "$srcdir"
@@ -24,11 +28,12 @@ check() {
 package() {
     cd "$srcdir"
 
-    install -D -m 755 target/release/alerter $pkgdir/usr/bin/alerter
+    install -D -m 755 target/release/$pkgname $pkgdir/usr/bin/$pkgname
     install -D -m 755 target/release/alert $pkgdir/usr/bin/alert
-    install -D -m 644 pkg/config.yml $pkgdir/etc/alerter.yml
-    install -D -m 644 pkg/config-client.yml $pkgdir/etc/alert.yml
-    install -D -m 644 pkg/systemd.service $pkgdir/usr/lib/systemd/system/alerter.service
+    install -D -m 644 pkg/$pkgname.yml $pkgdir/etc/$pkgname/$pkgname.yml
+    install -D -m 644 pkg/alert.yml $pkgdir/etc/$pkgname/alert.yml
+    install -D -m 644 pkg/log4rs.yml $pkgdir/etc/$pkgname/log4rs.yml
+    install -D -m 644 pkg/systemd.service $pkgdir/usr/lib/systemd/system/$pkgname.service
     install -D -m 644 pkg/systemd.sysusers $pkgdir/usr/lib/sysusers.d/${pkgname}.conf
     install -D -m 644 pkg/systemd.tmpfiles $pkgdir/usr/lib/tmpfiles.d/${pkgname}.conf
 }

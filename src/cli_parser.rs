@@ -18,11 +18,11 @@
 use clap::App;
 use clap::Arg;
 
-pub const FLAG_VERBOSE: &str = "verbose";
+pub const FLAG_LOG_CONFIG: &str = "log-config";
 pub const FLAG_CONFIG: &str = "config";
 
 pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
-    let app = App::new("alerter")
+    App::new("alerter")
         .version(concat!(
             env!("CARGO_PKG_VERSION"),
             " ",
@@ -41,12 +41,12 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
                 .default_value("/var/lib/alerter/alerter.yml"),
         )
         .arg(
-            Arg::with_name("verbose")
+            Arg::with_name(FLAG_LOG_CONFIG)
                 .short("v")
-                .long(FLAG_VERBOSE)
-                .help("Output information while running")
-                .multiple(true)
-                .takes_value(false),
-        );
-    app.get_matches()
+                .long(FLAG_LOG_CONFIG)
+                .help("The log4rs logging configuration")
+                .takes_value(true)
+                .default_value("/etc/alerter/log4rs.yml"),
+        )
+        .get_matches()
 }

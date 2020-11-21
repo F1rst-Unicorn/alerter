@@ -18,7 +18,7 @@
 use clap::App;
 use clap::Arg;
 
-pub const FLAG_VERBOSE: &str = "verbose";
+pub const FLAG_LOG_CONFIG: &str = "log-config";
 pub const FLAG_CONFIG: &str = "config";
 
 pub const FLAG_TITLE: &str = "TITLE";
@@ -57,7 +57,7 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
                 .value_name("PATH")
                 .help("The config file or directory to run with")
                 .takes_value(true)
-                .default_value("/etc/alert.yml"),
+                .default_value("/etc/alerter/alert.yml"),
         )
         .arg(
             Arg::with_name(FLAG_CHANNEL)
@@ -90,12 +90,12 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
                 .multiple(true),
         )
         .arg(
-            Arg::with_name("verbose")
+            Arg::with_name(FLAG_LOG_CONFIG)
                 .short("v")
-                .long(FLAG_VERBOSE)
-                .help("Output information while running")
-                .multiple(true)
-                .takes_value(false),
+                .long(FLAG_LOG_CONFIG)
+                .help("The log4rs logging configuration")
+                .takes_value(true)
+                .default_value("/etc/alerter/log4rs.yml"),
         )
         .get_matches()
 }

@@ -31,7 +31,11 @@ use slack::Slack;
 
 fn main() {
     let arguments = cli_parser::parse_arguments();
-    logging::initialise(arguments.occurrences_of(cli_parser::FLAG_VERBOSE));
+    logging::initialise(
+        arguments
+            .value_of(cli_parser::FLAG_LOG_CONFIG)
+            .expect("Missing default value in cli_parser"),
+    );
 
     debug!("Starting up");
 

@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package de.njsm.alerter.test;
+package de.njsm.alerter.test.client;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -38,6 +38,8 @@ public class Alert {
 
     public static final String CONFIG_PATH = "de.njsm.alerter.config";
 
+    public static final String LOG_CONFIG_PATH = "de.njsm.alerter.logconfig";
+
     private String text;
 
     private String title;
@@ -48,7 +50,7 @@ public class Alert {
 
     private Optional<String> level;
 
-    private Map<String, String> fields;
+    private final Map<String, String> fields;
 
     public Alert() {
         this.text = "";
@@ -69,6 +71,9 @@ public class Alert {
         command.add(getBinaryPath());
         command.add("-C");
         command.add(getConfigPath());
+        command.add("-v");
+        command.add(getLogConfigPath());
+
         command.add(title);
         command.add(text);
 
@@ -113,6 +118,10 @@ public class Alert {
 
     private String getConfigPath() {
         return System.getProperty(CONFIG_PATH);
+    }
+
+    private String getLogConfigPath() {
+        return System.getProperty(LOG_CONFIG_PATH);
     }
 
     public static class AlertBuilder {

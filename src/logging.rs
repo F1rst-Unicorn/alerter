@@ -15,36 +15,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use log4rs::config::{Appender, Config, Logger, Root};
-use log4rs::encode::pattern::PatternEncoder;
-
-use log::LevelFilter;
-
-pub fn initialise(verbosity_level: u64) {
-    let stdout = log4rs::append::console::ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{level} {m}{n}")))
-        .build();
-
-    let level = match verbosity_level {
-        0 => LevelFilter::Info,
-        1 => LevelFilter::Debug,
-        _ => LevelFilter::Trace,
-    };
-
-    let mut config =
-        Config::builder().appender(Appender::builder().build("stdout", Box::new(stdout)));
-
-    for module in &["tokio_reactor", "hyper", "mio", "want", "reqwest"] {
-        config = config.logger(
-            Logger::builder()
-                .additive(false)
-                .build(*module, LevelFilter::Info),
-        )
-    }
-
-    let config = config
-        .build(Root::builder().appender("stdout").build(level))
-        .expect("Could not configure logging");
-
-    log4rs::init_config(config).expect("Could not apply log config");
+pub fn initialise(file_path: &str) {
+    log4rs::init_file(file_path, Default::default()).expect("Could not configure logging");
 }

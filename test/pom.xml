@@ -122,6 +122,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <de.njsm.alerter.config>${basedir}/src/test/resources/config.yml</de.njsm.alerter.config>
+                        <de.njsm.alerter.logconfig>${basedir}/src/test/resources/log4rs.yml</de.njsm.alerter.logconfig>
                         <de.njsm.alerter.binary>${basedir}/../target/debug/alert</de.njsm.alerter.binary>
                     </systemPropertyVariables>
                 </configuration>

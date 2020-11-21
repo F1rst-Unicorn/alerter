@@ -42,7 +42,7 @@ features = ["json", "blocking"]
 [dependencies.log4rs]
 version = "0.13"
 default-features = false
-features = ["file", "pattern_encoder", "console_appender"]
+features = ["file", "pattern_encoder", "console_appender", "yaml_format", "json_encoder"]
 
 [build-dependencies]
 vergen = "3"

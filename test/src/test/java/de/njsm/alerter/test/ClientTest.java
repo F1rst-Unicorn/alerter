@@ -19,6 +19,8 @@
 
 package de.njsm.alerter.test;
 
+import de.njsm.alerter.test.client.Alert;
+import de.njsm.alerter.test.client.MessageAsserter;
 import org.junit.Before;
 import org.junit.Test;
 import org.newsclub.net.unix.AFUNIXServerSocket;
@@ -53,7 +55,7 @@ public class ClientTest {
         socket.bind(new AFUNIXSocketAddress(socketFile), 1);
     }
 
-    @Test
+    @Test(timeout = 2000)
     public void simpleMessageWorks() throws InterruptedException {
         String text = "test";
 
@@ -68,7 +70,7 @@ public class ClientTest {
         asserter.check();
     }
 
-    @Test
+    @Test(timeout = 2000)
     public void messageToExplicitChannelWorks() throws InterruptedException {
         String text = "test";
         String channel = "channel";
@@ -86,7 +88,7 @@ public class ClientTest {
         asserter.check();
     }
 
-    @Test
+    @Test(timeout = 2000)
     public void messageWithTitleWorks() throws InterruptedException {
         String text = "test";
         String title = "title";
@@ -104,7 +106,7 @@ public class ClientTest {
         asserter.check();
     }
 
-    @Test
+    @Test(timeout = 2000)
     public void messageWithTitleAndTitleLinkWorks() throws InterruptedException {
         String text = "test";
         String title = "title";
@@ -125,7 +127,7 @@ public class ClientTest {
         asserter.check();
     }
 
-    @Test
+    @Test(timeout = 2000)
     public void noLevelGivesUnknownColor() throws InterruptedException {
         String text = "test";
 
@@ -141,7 +143,7 @@ public class ClientTest {
         asserter.check();
     }
 
-    @Test
+    @Test(timeout = 2000)
     public void okLevelGivesOkColor() throws InterruptedException {
         String text = "test";
 
@@ -158,7 +160,7 @@ public class ClientTest {
         asserter.check();
     }
 
-    @Test
+    @Test(timeout = 2000)
     public void warnLevelGivesWarnColor() throws InterruptedException {
         String text = "test";
 
@@ -175,7 +177,7 @@ public class ClientTest {
         asserter.check();
     }
 
-    @Test
+    @Test(timeout = 2000)
     public void errorLevelGivesErrorColor() throws InterruptedException {
         String text = "test";
 
@@ -192,7 +194,24 @@ public class ClientTest {
         asserter.check();
     }
 
-    @Test
+    @Test(timeout = 2000)
+    public void unknownLevelGivesUnknownColor() throws InterruptedException {
+        String text = "test";
+
+        MessageAsserter asserter = MessageAsserter.build(socket)
+                .hasText(text)
+                .hasColor(ColorCode.UNKNOWN)
+                .start();
+
+        Alert.build()
+                .withText(text)
+                .withLevel(Level.UNKNOWN)
+                .call();
+
+        asserter.check();
+    }
+
+    @Test(timeout = 2000)
     public void keyValuePairsWork() throws InterruptedException {
         String text = "test";
 

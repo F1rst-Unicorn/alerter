@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package de.njsm.alerter.test;
+package de.njsm.alerter.test.client;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;

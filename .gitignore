@@ -1,4 +1,4 @@
-/target
+target
 **/*.rs.bk
 
 pkg/Archlinux/*.tar*
@@ -6,3 +6,7 @@ pkg/Archlinux/pkg
 
 config.yml
 alert-config.yml
+
+*.code-workspace
+*.iml
+.idea

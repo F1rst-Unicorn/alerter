@@ -49,17 +49,15 @@ impl Config {
 }
 
 pub fn parse_config(file_path: &str) -> Config {
-    let raw_config = read_file(file_path);
+    let raw_config = match read_file(file_path) {
+        Err(e) => {
+            error!("Could not read config: {}", e);
+            exit(EXIT_CODE);
+        }
+        Ok(v) => v,
+    };
 
-    if let Err(e) = raw_config {
-        error!("Could not read config: {}", e);
-        exit(EXIT_CODE);
-    }
-
-    let raw_config = raw_config.unwrap();
-    let parse_result = serde_yaml::from_str(raw_config.as_str());
-
-    match parse_result {
+    match serde_yaml::from_str(raw_config.as_str()) {
         Err(e) => {
             error!("Could not parse config: {:#?}", e);
             exit(EXIT_CODE);

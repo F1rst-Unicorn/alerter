@@ -72,9 +72,9 @@ pub enum Level {
     UNKNOWN,
 }
 
-impl Level {
-    pub fn into_string(self) -> String {
-        match self {
+impl From<Level> for String {
+    fn from(v: Level) -> Self {
+        match v {
             Level::OK => "#44bb77",
             Level::WARN => "#ffaa44",
             Level::ERROR => "#ff5566",

@@ -20,13 +20,17 @@ pub mod config;
 pub mod logging;
 pub mod message;
 
-use log::{debug, error, warn};
-
-use crate::message::{Attachment, Field, Message};
+use crate::message::Attachment;
+use crate::message::Field;
+use crate::message::Message;
 
 use std::io::Write;
 use std::os::unix::net::UnixStream;
 use std::process::exit;
+
+use log::debug;
+use log::error;
+use log::warn;
 
 fn main() {
     let arguments = alert_cli_parser::parse_arguments();
@@ -41,20 +45,20 @@ fn main() {
 
     let config = config::parse_config(config_path);
 
-    let message = transform_arguments(arguments);
+    let message = compose_message_from_arguments(arguments);
 
-    send(&config.socket_path, message);
+    send_message(&config.socket_path, message);
 }
 
-fn transform_arguments(args: clap::ArgMatches) -> Message {
+fn compose_message_from_arguments(args: clap::ArgMatches) -> Message {
     let mut result: Message = Default::default();
 
-    result.username = config::read_file("/etc/hostname").ok();
+    result.username = config::read_file("/etc/hostname")
+        .map(|v| v.trim().to_string())
+        .ok();
     result.channel = args
         .value_of(alert_cli_parser::FLAG_CHANNEL)
         .map(str::to_string);
-
-    let mut attachments = Vec::new();
 
     let color = parse_color(args.value_of(alert_cli_parser::FLAG_LEVEL));
 
@@ -72,9 +76,8 @@ fn transform_arguments(args: clap::ArgMatches) -> Message {
     attachment.footer = Some("alert v".to_string() + env!("CARGO_PKG_VERSION"));
     attachment.ts = Some(chrono::Utc::now().timestamp());
     attachment.fields = parse_additional_fields(args.values_of(alert_cli_parser::FLAG_FIELD));
-    attachments.push(attachment);
 
-    result.attachments = Some(attachments);
+    result.attachments = Some(vec![attachment]);
     result
 }
 
@@ -82,8 +85,8 @@ fn parse_color(color: Option<&str>) -> Option<String> {
     let color = color
         .map(serde_yaml::from_str::<message::Level>)
         .map(Result::ok)
-        .and_then(|x| x)
-        .map(message::Level::into_string);
+        .flatten()
+        .map(From::from);
 
     if color.is_none() {
         error!("Invalid level given");
@@ -114,26 +117,26 @@ fn parse_additional_fields(values: Option<clap::Values>) -> Option<Vec<Field>> {
     Some(fields)
 }
 
-fn send(socket_path: &str, message: Message) {
-    let stream = UnixStream::connect(socket_path);
-    if let Err(e) = stream {
-        error!("Failed to open socket: {}", e);
-        return;
-    }
-    let mut stream = stream.unwrap();
+fn send_message(socket_path: &str, message: Message) {
+    let mut stream = match UnixStream::connect(socket_path) {
+        Err(e) => {
+            error!("Failed to open socket: {}", e);
+            return;
+        }
+        Ok(v) => v,
+    };
 
-    let raw_message = serde_json::to_string(&message);
-    if let Err(e) = raw_message {
-        error!("Failed to message to string: {}", e);
-        return;
-    }
-
-    let raw_message = raw_message.unwrap();
+    let raw_message = match serde_json::to_string(&message) {
+        Err(e) => {
+            error!("Failed to message to string: {}", e);
+            return;
+        }
+        Ok(v) => v,
+    };
 
     debug!("Sending {}", raw_message);
 
-    let result = stream.write_all(&raw_message.into_bytes());
-    if let Err(e) = result {
+    if let Err(e) = stream.write_all(&raw_message.into_bytes()) {
         error!("Failed to hand over message to daemon: {}", e);
     }
 }

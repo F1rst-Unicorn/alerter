@@ -29,7 +29,7 @@ pub const FLAG_LEVEL: &str = "LEVEL";
 pub const FLAG_FIELD: &str = "FIELD";
 
 pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
-    let app = App::new("alert")
+    App::new("alert")
         .version(concat!(
             env!("CARGO_PKG_VERSION"),
             " ",
@@ -96,6 +96,6 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
                 .help("Output information while running")
                 .multiple(true)
                 .takes_value(false),
-        );
-    app.get_matches()
+        )
+        .get_matches()
 }

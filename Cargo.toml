@@ -26,10 +26,10 @@ log = "0.4.11"
 serde_derive = "1.0.115"
 serde_yaml = "0.8.13"
 serde_json = "1.0.57"
-nix = "0.18"
+nix = "0.19"
 chrono = "0.4.15"
 libc = "0.2.76"
-systemd = "0.5"
+systemd = "0.8"
 
 [dependencies.serde]
 version = "1.0.115"

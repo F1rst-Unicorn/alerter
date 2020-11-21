@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
 
 * Move config files into own `/etc` subdirectory
 
+* Update dependencies
+
 ## [1.0.6]
 
 ### Maintenance

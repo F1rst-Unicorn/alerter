@@ -20,7 +20,7 @@
 package de.njsm.alerter.test;
 
 import de.njsm.alerter.test.client.Alert;
-import de.njsm.alerter.test.client.MessageAsserter;
+import de.njsm.alerter.test.client.MessageCaptor;
 import org.junit.Before;
 import org.junit.Test;
 import org.newsclub.net.unix.AFUNIXServerSocket;
@@ -31,7 +31,7 @@ import java.io.IOException;
 
 public class ClientTest {
 
-    private AFUNIXServerSocket socket;
+    private MessageCaptor captor;
 
     private interface ColorCode {
         String OK = "#44bb77";
@@ -51,23 +51,22 @@ public class ClientTest {
     public void setup() throws IOException {
         File socketFile = new File("alert.sock");
         socketFile.delete();
-        socket = AFUNIXServerSocket.newInstance();
+        AFUNIXServerSocket socket = AFUNIXServerSocket.newInstance();
         socket.bind(new AFUNIXSocketAddress(socketFile), 1);
+        captor = MessageCaptor.build(socket).start();
     }
 
     @Test(timeout = 2000)
     public void simpleMessageWorks() throws InterruptedException {
         String text = "test";
 
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .start();
-
         Alert.build()
                 .withText(text)
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasHostname();
     }
 
     @Test(timeout = 2000)
@@ -75,17 +74,15 @@ public class ClientTest {
         String text = "test";
         String channel = "channel";
 
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .hasChannel(channel)
-                .start();
-
         Alert.build()
                 .withText(text)
                 .withChannel(channel)
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasChannel(channel)
+                .hasHostname();
     }
 
     @Test(timeout = 2000)
@@ -93,17 +90,15 @@ public class ClientTest {
         String text = "test";
         String title = "title";
 
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .hasTitle(title)
-                .start();
-
         Alert.build()
                 .withText(text)
                 .withTitle(title)
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasTitle(title)
+                .hasHostname();
     }
 
     @Test(timeout = 2000)
@@ -112,114 +107,96 @@ public class ClientTest {
         String title = "title";
         String titleLink = "titleLink";
 
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .hasTitle(title)
-                .hasTitleLink(titleLink)
-                .start();
-
         Alert.build()
                 .withText(text)
                 .withTitle(title)
                 .withTitleLink(titleLink)
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasTitle(title)
+                .hasTitleLink(titleLink)
+                .hasHostname();
     }
 
     @Test(timeout = 2000)
     public void noLevelGivesUnknownColor() throws InterruptedException {
         String text = "test";
 
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .hasColor(ColorCode.UNKNOWN)
-                .start();
-
         Alert.build()
                 .withText(text)
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasColor(ColorCode.UNKNOWN)
+                .hasHostname();
     }
 
     @Test(timeout = 2000)
     public void okLevelGivesOkColor() throws InterruptedException {
         String text = "test";
 
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .hasColor(ColorCode.OK)
-                .start();
-
         Alert.build()
                 .withText(text)
                 .withLevel(Level.OK)
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasColor(ColorCode.OK)
+                .hasHostname();
     }
 
     @Test(timeout = 2000)
     public void warnLevelGivesWarnColor() throws InterruptedException {
         String text = "test";
 
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .hasColor(ColorCode.WARN)
-                .start();
-
         Alert.build()
                 .withText(text)
                 .withLevel(Level.WARN)
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasColor(ColorCode.WARN)
+                .hasHostname();
     }
 
     @Test(timeout = 2000)
     public void errorLevelGivesErrorColor() throws InterruptedException {
         String text = "test";
 
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .hasColor(ColorCode.ERROR)
-                .start();
-
         Alert.build()
                 .withText(text)
                 .withLevel(Level.ERROR)
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasColor(ColorCode.ERROR)
+                .hasHostname();
     }
 
     @Test(timeout = 2000)
     public void unknownLevelGivesUnknownColor() throws InterruptedException {
         String text = "test";
 
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .hasColor(ColorCode.UNKNOWN)
-                .start();
-
         Alert.build()
                 .withText(text)
                 .withLevel(Level.UNKNOWN)
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasColor(ColorCode.UNKNOWN)
+                .hasHostname();
     }
 
     @Test(timeout = 2000)
     public void keyValuePairsWork() throws InterruptedException {
         String text = "test";
-
-        MessageAsserter asserter = MessageAsserter.build(socket)
-                .hasText(text)
-                .hasField("simple", "simple")
-                .hasField("key", ":value:test:")
-                .start();
 
         Alert.build()
                 .withText(text)
@@ -228,6 +205,10 @@ public class ClientTest {
                 .withField("key", ":value:test:")
                 .call();
 
-        asserter.check();
+        captor.verify()
+                .hasText(text)
+                .hasField("simple", "simple")
+                .hasField("key", ":value:test:")
+                .hasHostname();
     }
 }

@@ -21,8 +21,9 @@ package de.njsm.alerter.test;
 
 import de.njsm.alerter.test.client.Alert;
 import de.njsm.alerter.test.client.MessageCaptor;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.newsclub.net.unix.AFUNIXServerSocket;
 import org.newsclub.net.unix.AFUNIXSocketAddress;
 
@@ -47,7 +48,7 @@ public class ClientTest {
         String UNKNOWN = "UNKNOWN";
     }
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException {
         File socketFile = new File("alert.sock");
         socketFile.delete();
@@ -56,7 +57,8 @@ public class ClientTest {
         captor = MessageCaptor.build(socket).start();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void simpleMessageWorks() throws InterruptedException {
         String text = "test";
 
@@ -69,7 +71,8 @@ public class ClientTest {
                 .hasHostname();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void messageToExplicitChannelWorks() throws InterruptedException {
         String text = "test";
         String channel = "channel";
@@ -85,7 +88,8 @@ public class ClientTest {
                 .hasHostname();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void messageWithTitleWorks() throws InterruptedException {
         String text = "test";
         String title = "title";
@@ -101,7 +105,8 @@ public class ClientTest {
                 .hasHostname();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void messageWithTitleAndTitleLinkWorks() throws InterruptedException {
         String text = "test";
         String title = "title";
@@ -120,7 +125,8 @@ public class ClientTest {
                 .hasHostname();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void noLevelGivesUnknownColor() throws InterruptedException {
         String text = "test";
 
@@ -134,7 +140,8 @@ public class ClientTest {
                 .hasHostname();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void okLevelGivesOkColor() throws InterruptedException {
         String text = "test";
 
@@ -149,7 +156,8 @@ public class ClientTest {
                 .hasHostname();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void warnLevelGivesWarnColor() throws InterruptedException {
         String text = "test";
 
@@ -164,7 +172,8 @@ public class ClientTest {
                 .hasHostname();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void errorLevelGivesErrorColor() throws InterruptedException {
         String text = "test";
 
@@ -179,7 +188,8 @@ public class ClientTest {
                 .hasHostname();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void unknownLevelGivesUnknownColor() throws InterruptedException {
         String text = "test";
 
@@ -194,7 +204,8 @@ public class ClientTest {
                 .hasHostname();
     }
 
-    @Test(timeout = 2000)
+    @Test
+    @Timeout(2)
     public void keyValuePairsWork() throws InterruptedException {
         String text = "test";
 

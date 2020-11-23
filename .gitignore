@@ -1,4 +1,6 @@
 target
+build
+.gradle
 **/*.rs.bk
 
 pkg/Archlinux/*.tar*

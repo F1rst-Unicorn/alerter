@@ -30,15 +30,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import static de.njsm.alerter.test.Config.*;
+
 public class Alert {
 
     private static final Logger LOG = LogManager.getLogger(Alert.class);
-
-    public static final String BINARY_PATH = "de.njsm.alerter.binary";
-
-    public static final String CONFIG_PATH = "de.njsm.alerter.config";
-
-    public static final String LOG_CONFIG_PATH = "de.njsm.alerter.logconfig";
 
     private String text;
 
@@ -68,7 +64,7 @@ public class Alert {
     private void call() {
         ArrayList<String> command = new ArrayList<>();
 
-        command.add(getBinaryPath());
+        command.add(getClientBinaryPath());
         command.add("-C");
         command.add(getConfigPath());
         command.add("-v");
@@ -110,18 +106,6 @@ public class Alert {
         } catch (InterruptedException | IOException e) {
             LOG.error("Failed to execute alert command", e);
         }
-    }
-
-    private String getBinaryPath() {
-        return System.getProperty(BINARY_PATH);
-    }
-
-    private String getConfigPath() {
-        return System.getProperty(CONFIG_PATH);
-    }
-
-    private String getLogConfigPath() {
-        return System.getProperty(LOG_CONFIG_PATH);
     }
 
     public static class AlertBuilder {

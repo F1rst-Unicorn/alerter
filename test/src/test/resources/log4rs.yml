@@ -26,7 +26,7 @@ appenders:
     encoder:
       # https://docs.rs/log4rs/0.8.3/log4rs/encode/pattern/index.html
       kind: pattern
-      pattern: "{level:>5} {message}{n}"
+      pattern: "{level:>5} {M} {message}{n}"
 
 root:
   level: warn
@@ -35,6 +35,6 @@ root:
 
 loggers:
   alert:
-    level: info
+    level: trace
   alerter:
-    level: info
+    level: trace

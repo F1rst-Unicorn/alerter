@@ -20,6 +20,7 @@ dependencies {
     testImplementation 'io.burt:jmespath-core:0.5.0'
     testImplementation 'io.burt:jmespath-gson:0.5.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.0'
+    testImplementation 'org.mock-server:mockserver-junit-jupiter:5.11.1'
 }
 
 group = 'de.njsm.alerter'
@@ -35,5 +36,6 @@ test {
     useJUnitPlatform()
     systemProperty 'de.njsm.alerter.config', "$projectDir/src/test/resources/config.yml"
     systemProperty 'de.njsm.alerter.logconfig', "$projectDir/src/test/resources/log4rs.yml"
-    systemProperty 'de.njsm.alerter.binary', "$projectDir/../target/debug/alert"
+    systemProperty 'de.njsm.alerter.client.binary', "$projectDir/../target/debug/alert"
+    systemProperty 'de.njsm.alerter.server.binary', "$projectDir/../target/debug/alerter"
 }

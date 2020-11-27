@@ -29,8 +29,7 @@ import io.burt.jmespath.gson.GsonRuntime;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class MessageAsserter {
@@ -42,57 +41,66 @@ public class MessageAsserter {
     public MessageAsserter(String rawMessage) {
         path = new GsonRuntime();
         message = new GsonBuilder().create().fromJson(rawMessage, JsonObject.class);
+
+        verifyBasics();
+    }
+
+    private void verifyBasics() {
+        verifyTimestampSet();
+        verifyFooterSet();
+    }
+
+    private void verifyTimestampSet() {
+        JsonElement actualText = getJsonElement("attachments[0].ts");
+        assertTrue(1606503490 < actualText.getAsLong());
+    }
+
+    private void verifyFooterSet() {
+        JsonElement actualText = getJsonElement("attachments[0].footer");
+        assertTrue(actualText.getAsString().startsWith("alert v"));
     }
 
     public MessageAsserter hasText(String text) {
-        Expression<JsonElement> matcher = path.compile("attachments[0].text");
-        JsonElement actualText = matcher.search(message);
-        assertEquals(text, actualText.getAsString());
-        return this;
+        return verifyJmesPath("attachments[0].text", text);
     }
 
     public MessageAsserter hasTitle(String title) {
-        Expression<JsonElement> matcher = path.compile("attachments[0].title");
-        JsonElement actualText = matcher.search(message);
-        assertEquals(title, actualText.getAsString());
-        return this;
+        return verifyJmesPath("attachments[0].title", title);
     }
 
     public MessageAsserter hasChannel(String channel) {
-        Expression<JsonElement> matcher = path.compile("channel");
-        JsonElement actualText = matcher.search(message);
-        assertEquals(channel, actualText.getAsString());
-        return this;
+        return verifyJmesPath("channel", channel);
     }
 
     public MessageAsserter hasTitleLink(String titleLink) {
-        Expression<JsonElement> matcher = path.compile("attachments[0].title_link");
-        JsonElement actualText = matcher.search(message);
-        assertEquals(titleLink, actualText.getAsString());
-        return this;
+        return verifyJmesPath("attachments[0].title_link", titleLink);
     }
 
     public MessageAsserter hasColor(String color) {
-        Expression<JsonElement> matcher = path.compile("attachments[0].color");
-        JsonElement actualText = matcher.search(message);
-        assertEquals(color, actualText.getAsString());
-        return this;
+        return verifyJmesPath("attachments[0].color", color);
     }
 
     public MessageAsserter hasField(String key, String value) {
-        Expression<JsonElement> matcher = path.compile("attachments[0].fields[?title == '" + key + "'].value");
-        JsonElement actualText = matcher.search(message);
-        assertEquals(value, actualText.getAsString());
-        return this;
+        return verifyJmesPath("attachments[0].fields[?title == '" + key + "'].value", value);
     }
 
     public void hasHostname() {
-        Expression<JsonElement> matcher = path.compile("username");
-        JsonElement actualText = matcher.search(message);
         try {
-            assertEquals(InetAddress.getLocalHost().getCanonicalHostName(), actualText.getAsString());
+            String hostname = InetAddress.getLocalHost().getCanonicalHostName();
+            verifyJmesPath("username", hostname);
         } catch (UnknownHostException e) {
             fail();
         }
+    }
+
+    private MessageAsserter verifyJmesPath(String jmesPath, String content) {
+        JsonElement actualText = getJsonElement(jmesPath);
+        assertEquals(content, actualText.getAsString());
+        return this;
+    }
+
+    private JsonElement getJsonElement(String s) {
+        Expression<JsonElement> matcher = path.compile(s);
+        return matcher.search(message);
     }
 }

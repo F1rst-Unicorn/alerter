@@ -20,14 +20,19 @@ pub mod backoff;
 pub mod cli_parser;
 pub mod config;
 pub mod daemon;
+pub mod listener;
 pub mod logging;
 pub mod message;
 pub mod slack;
+pub mod spool_dispatcher;
 pub mod spooler;
+pub mod systemd;
+pub mod terminator;
 
 use daemon::Daemon;
+
 use log::debug;
-use slack::Slack;
+use log::error;
 
 fn main() {
     let arguments = cli_parser::parse_arguments();
@@ -47,9 +52,17 @@ fn main() {
     let config = config::parse_config(config_path);
     config.validate();
 
-    let slack = Slack::new(config.webhook.unwrap());
-
-    let mut daemon = Daemon::new(&config.socket_path, &config.spool_path.unwrap(), slack);
-
-    daemon.run();
+    match Daemon::new(
+        &config.socket_path,
+        &config.spool_path.unwrap(),
+        &config.webhook.unwrap(),
+    ) {
+        None => {}
+        Some(daemon) => match daemon.run() {
+            Err(e) => {
+                error!("Failed to start runtime: {}", e);
+            }
+            Ok(()) => {}
+        },
+    };
 }

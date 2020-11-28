@@ -153,7 +153,7 @@ public class ServerTest {
 
     private void assertEmptyQueue() throws IOException {
         try {
-            assertEquals("", IOUtils.toString(new FileInputStream(QUEUE_PATH), Charset.defaultCharset()));
+            assertEquals("", IOUtils.toString(new FileInputStream(QUEUE_PATH), Charset.defaultCharset()).trim());
         } catch (FileNotFoundException e) {}
     }
 

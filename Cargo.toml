@@ -44,5 +44,9 @@ version = "0.13"
 default-features = false
 features = ["file", "pattern_encoder", "console_appender", "yaml_format", "json_encoder"]
 
+[dependencies.tokio]
+version = "0.2"
+features = ["full"]
+
 [build-dependencies]
 vergen = "3"

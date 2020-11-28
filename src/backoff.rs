@@ -17,40 +17,30 @@
 
 use std::num::Wrapping;
 
-use log::{debug, info};
+use log::info;
 
 #[derive(Default)]
 pub struct Backoff {
     backoff: Wrapping<u64>,
-
-    counter: u64,
 }
 
 impl Backoff {
     pub fn new() -> Self {
         Backoff {
             backoff: Wrapping(1u64),
-            counter: 0,
         }
     }
 
     pub fn reset(&mut self) {
         self.backoff = Wrapping(1u64);
-        self.counter = 0;
     }
 
-    pub fn inc(&mut self) {
-        self.counter += 1;
-        debug!("Backoff {}/{}", self.counter, self.backoff);
-    }
-
-    pub fn is_ready(&self) -> bool {
-        Wrapping(self.counter) == self.backoff
+    pub fn get_backoff(&self) -> u64 {
+        self.backoff.0
     }
 
     pub fn backoff(&mut self) {
         self.backoff *= Wrapping(2);
-        self.counter = 0;
         info!("Increasing backoff, now at {}", self.backoff);
     }
 }

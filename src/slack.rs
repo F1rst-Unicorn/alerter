@@ -17,10 +17,20 @@
 
 use crate::message::Message;
 
-use log::{debug, warn};
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::Sender;
+
+use log::debug;
+use log::warn;
 
 pub struct Slack {
     webhook_url: String,
+
+    spooler: Receiver<Message>,
+
+    send_reporter: Sender<Option<Message>>,
+
+    terminator: tokio::sync::broadcast::Receiver<()>,
 }
 
 #[derive(Debug)]
@@ -28,33 +38,68 @@ pub enum Error {
     ReqwestError(reqwest::Error),
 
     StatusCode(u16),
-
-    General(reqwest::Error),
 }
 
 impl Slack {
-    pub fn new(webhook_url: String) -> Self {
-        Slack { webhook_url }
+    pub fn new(
+        spooler: Receiver<Message>,
+        send_reporter: Sender<Option<Message>>,
+        webhook_url: String,
+        terminator: tokio::sync::broadcast::Receiver<()>,
+    ) -> Self {
+        Slack {
+            webhook_url,
+            spooler,
+            send_reporter,
+            terminator,
+        }
     }
 
-    pub fn send(&self, message: &Message) -> Result<(), Error> {
-        debug!("Sending message");
+    pub async fn send_messages(&mut self) {
+        loop {
+            tokio::select! {
+                next = self.spooler.recv() => {
+                   if let Some(message) = next {
+                        debug!("Sending message");
+                        if self.send_message(&message).await.is_err() {
+                            if self.send_reporter.send(Some(message)).await.is_err() {
+                                debug!("Slack shutting down");
+                                return;
+                            }
+                        } else if self.send_reporter.send(None).await.is_err() {
+                            debug!("Slack shutting down");
+                            return;
+                        }
+                    } else {
+                        debug!("Slack shutting down");
+                        return;
+                    }
+                }
+                _ = self.terminator.recv() => {
+                    debug!("Slack shutting down");
+                    return;
+                }
+            }
+        }
+    }
 
-        let client = reqwest::blocking::Client::builder()
-            .build()
-            .map_err(Error::ReqwestError)?;
+    async fn send_message(&self, message: &Message) -> Result<(), ()> {
+        let client = reqwest::Client::builder().build().map_err(|_| ())?;
 
-        let response = client.post(&self.webhook_url).json(message).send();
+        let response = client.post(&self.webhook_url).json(message).send().await;
 
         match response {
             Ok(r) => match r.status().as_u16() {
                 200 => Ok(()),
-                c => {
+                _ => {
                     warn!("Upstream reported error: {:#?}", r);
-                    Err(Error::StatusCode(c))
+                    Err(())
                 }
             },
-            Err(e) => Err(Error::General(e)),
+            Err(e) => {
+                warn!("Error while sending: {}", e);
+                Err(())
+            }
         }
     }
 }

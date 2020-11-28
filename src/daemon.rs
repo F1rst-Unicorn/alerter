@@ -15,289 +15,92 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use nix::errno;
-use nix::sys::epoll;
-use nix::sys::signal;
-use nix::sys::signalfd;
-use nix::sys::socket;
-use nix::sys::stat;
-
-use systemd::daemon::notify;
-
-use std::convert::TryFrom;
-use std::ffi::CString;
-use std::fs::remove_file;
-use std::io::Error;
-use std::os::unix::io::AsRawFd;
-use std::os::unix::io::FromRawFd;
-use std::os::unix::io::RawFd;
-use std::process::exit;
-
-use log::{debug, error, info, warn};
-
-use crate::backoff::Backoff;
-use crate::message::Message;
+use crate::listener::Listener;
 use crate::slack::Slack;
+use crate::spool_dispatcher::SpoolDispatcher;
 use crate::spooler::Spooler;
 
-const EXIT_CODE: i32 = 2;
+use tokio::sync::broadcast::Sender;
+
+use log::error;
 
 pub struct Daemon {
-    spooler: Spooler,
+    listener: Listener,
 
-    backoff: Backoff,
-
-    socket_fd: RawFd,
-
-    epoll_fd: RawFd,
-
-    signal_fd: signalfd::SignalFd,
+    spool_dispatcher: SpoolDispatcher,
 
     slack: Slack,
 
-    keep_running: bool,
+    terminator: Sender<()>,
 }
 
 impl Daemon {
-    pub fn new(socket_path: &str, spool_path: &str, slack: Slack) -> Self {
-        let signal_fd = Daemon::setup_signal_handler();
-        if let Err(e) = signal_fd {
-            error!("Could not setup signals: {}", e);
-            exit(EXIT_CODE);
-        }
-        let signal_fd = signal_fd.unwrap();
-
-        let socket_fd = Daemon::setup_socket(socket_path);
-        if let Err(e) = socket_fd {
-            error!("Could not setup socket: {}", e);
-            exit(EXIT_CODE);
-        }
-        let socket_fd = socket_fd.unwrap();
-
-        let epoll_fd = Daemon::setup_epoll_fd(signal_fd.as_raw_fd(), socket_fd);
-        if let Err(e) = epoll_fd {
-            error!("Could not setup epoll: {}", e);
-            exit(EXIT_CODE);
-        }
-        let epoll_fd = epoll_fd.unwrap();
+    pub fn new(socket_path: &str, spool_path: &str, webhook_url: &str) -> Option<Self> {
+        let (to_slack, slack_receiver) = tokio::sync::mpsc::channel(5);
+        let (to_spooler, spooler_receiver) = tokio::sync::mpsc::channel(5);
+        let (terminator, terminatee) = tokio::sync::broadcast::channel(1);
 
         let spooler = Spooler::new(spool_path);
 
-        Daemon {
+        let slack = Slack::new(
+            slack_receiver,
+            to_spooler,
+            webhook_url.to_string(),
+            terminatee,
+        );
+
+        let spool_dispatcher = SpoolDispatcher::new(
             spooler,
-            backoff: Backoff::new(),
-            socket_fd,
-            epoll_fd,
-            signal_fd,
-            slack,
-            keep_running: true,
-        }
-    }
+            to_slack.clone(),
+            spooler_receiver,
+            terminator.subscribe(),
+        );
 
-    pub fn run(&mut self) {
-        info!("Ready for connections");
-        notify_systemd(&[("READY", "1")]);
-        while self.keep_running {
-            self.dispatch_epoll();
-            self.flush_spooler();
-        }
-        info!("Shutting down");
-    }
+        let listener = Listener::new(socket_path, to_slack, terminator.subscribe());
 
-    fn dispatch_epoll(&mut self) {
-        let mut event_buffer = [epoll::EpollEvent::empty(); 10];
-        let epoll_result = epoll::epoll_wait(self.epoll_fd, &mut event_buffer, 1000);
-        match epoll_result {
-            Ok(0) => {}
-            Ok(count) => {
-                debug!("epoll got {} events", count);
-                for event in event_buffer.iter().take(count) {
-                    self.handle_event(*event);
-                }
-            }
-            Err(error) => {
-                error!("Could not complete epoll: {:#?}", error);
-            }
-        }
-    }
-
-    fn handle_event(&mut self, event: epoll::EpollEvent) {
-        if event.events().contains(epoll::EpollFlags::EPOLLIN) {
-            let fd = event.data() as RawFd;
-            if fd == self.signal_fd.as_raw_fd() {
-                self.handle_signal();
-            } else if fd == self.socket_fd {
-                self.handle_request();
-            } else {
-                warn!("Unknown fd: {}", fd);
-            }
-        } else {
-            warn!("Received unknown event");
-        }
-    }
-
-    fn handle_request(&mut self) {
-        if let Err(e) = self.handle_request_internally() {
-            warn!("Failed to handle request: {:#?}", e);
-        }
-    }
-
-    fn handle_request_internally(&mut self) -> Result<(), nix::Error> {
-        let file = unsafe { std::fs::File::from_raw_fd(socket::accept(self.socket_fd)?) };
-
-        let message: Result<Message, serde_json::error::Error> = serde_json::from_reader(file);
-        if let Err(e) = message {
-            warn!("Could  not read request: {}", e);
-            return Ok(());
-        }
-        let message = message.unwrap();
-
-        if let Err(e) = self.slack.send(&message) {
-            warn!("Could not send message, queuing. Reason: {:#?}", e);
-            self.spooler.queue(message);
-            self.spooler.store();
-        }
-        Ok(())
-    }
-
-    fn flush_spooler(&mut self) {
-        let mut sent_messages = false;
-
-        if !self.spooler.is_empty() {
-            if self.backoff.is_ready() {
-                while let Some(m) = self.spooler.pop_message() {
-                    warn!("Retransmitting message");
-                    if let Err(e) = self.slack.send(&m) {
-                        warn!(
-                            "Could not send queued message, queuing again. Reason: {:#?}",
-                            e
-                        );
-                        self.spooler.queue_front(m);
-                        self.backoff.backoff();
-                        break;
-                    } else {
-                        info!("Queued message released");
-                        sent_messages = true;
-                        self.backoff.reset();
-                    }
-                }
-            } else {
-                self.backoff.inc();
-            }
-        }
-
-        if sent_messages {
-            self.spooler.store();
-        }
-    }
-
-    fn handle_signal(&mut self) {
-        match self.signal_fd.read_signal() {
-            Ok(Some(signal)) => match signal::Signal::try_from(signal.ssi_signo as i32).unwrap() {
-                signal::SIGINT | signal::SIGQUIT | signal::SIGTERM => {
-                    self.initiate_shutdown();
-                }
-                other => {
-                    debug!("Received unknown signal: {:?}", other);
-                }
-            },
-            Ok(None) => {
-                debug!("No signal received");
-            }
-            Err(other) => {
-                debug!("Received unknown signal: {:?}", other);
-            }
-        }
-    }
-
-    fn initiate_shutdown(&mut self) {
-        info!("Received termination signal");
-        self.keep_running = false;
-        notify_systemd(&[("STOPPING", "1")]);
-    }
-
-    fn setup_signal_handler() -> Result<signalfd::SignalFd, nix::Error> {
-        debug!("Setting up signal handler");
-        let mut signals = signalfd::SigSet::empty();
-        signals.add(signalfd::signal::SIGINT);
-        signals.add(signalfd::signal::SIGTERM);
-        signals.add(signalfd::signal::SIGQUIT);
-        signal::sigprocmask(signal::SigmaskHow::SIG_BLOCK, Some(&signals), None)?;
-        signalfd::SignalFd::with_flags(&signals, signalfd::SfdFlags::SFD_CLOEXEC)
-    }
-
-    fn setup_socket(socket_path: &str) -> Result<RawFd, nix::Error> {
-        debug!("Setting up socket");
-        match remove_file(socket_path).map_err(map_to_errno) {
-            Err(nix::Error::Sys(nix::errno::Errno::ENOENT)) => Ok(()),
-            e => e,
-        }?;
-
-        let listener = socket::socket(
-            socket::AddressFamily::Unix,
-            socket::SockType::Stream,
-            socket::SockFlag::SOCK_CLOEXEC,
-            None,
-        )?;
-
-        socket::bind(
+        Some(Self {
             listener,
-            &socket::SockAddr::Unix(socket::UnixAddr::new(socket_path)?),
-        )?;
+            spool_dispatcher,
+            slack,
+            terminator,
+        })
+    }
 
-        let mut flags = stat::Mode::empty();
-        flags.insert(stat::Mode::S_IRWXU);
-        flags.insert(stat::Mode::S_IRWXG);
-        flags.insert(stat::Mode::S_IRWXO);
-        stat::fchmod(listener, flags)?;
+    pub fn run(self) -> Result<(), tokio::io::Error> {
+        let mut tokio_runtime = tokio::runtime::Builder::new()
+            .threaded_scheduler()
+            .core_threads(3)
+            .enable_all()
+            .thread_name("tokio runtime")
+            .build()?;
 
-        unsafe {
-            let raw_path = CString::new(socket_path).expect("could not build cstring");
-            let res = libc::chmod(raw_path.into_raw(), 0o777);
-            if res == -1 {
-                return Err(nix::Error::Sys(errno::Errno::from_i32(errno::errno())));
+        let listener = self.listener;
+        let mut listener = match tokio_runtime.block_on(async move { listener.start() }) {
+            Err(e) => {
+                error!("Failed to start UNIX domain socket listener: {:#?}", e);
+                return Ok(());
             }
-        }
+            Ok(v) => v,
+        };
 
-        socket::listen(listener, 0)?;
+        let mut slack = self.slack;
+        tokio_runtime.spawn(async move {
+            slack.send_messages().await;
+        });
 
-        debug!("Input uds open");
-        Ok(listener)
-    }
+        let spool_dispatcher = self.spool_dispatcher;
+        tokio_runtime.spawn(spool_dispatcher.run());
 
-    fn setup_epoll_fd(signal_fd: RawFd, socket: RawFd) -> Result<RawFd, nix::Error> {
-        debug!("Setting up epoll");
-        let epoll_fd = epoll::epoll_create1(epoll::EpollCreateFlags::EPOLL_CLOEXEC)?;
-        epoll::epoll_ctl(
-            epoll_fd,
-            epoll::EpollOp::EpollCtlAdd,
-            signal_fd,
-            &mut epoll::EpollEvent::new(epoll::EpollFlags::EPOLLIN, signal_fd as u64),
-        )?;
-        epoll::epoll_ctl(
-            epoll_fd,
-            epoll::EpollOp::EpollCtlAdd,
-            socket,
-            &mut epoll::EpollEvent::new(epoll::EpollFlags::EPOLLIN, socket as u64),
-        )?;
-        Ok(epoll_fd)
-    }
-}
+        tokio_runtime.spawn(async move {
+            listener.handle_new_messages().await;
+        });
 
-fn notify_systemd(message: &[(&str, &str)]) {
-    let result = notify(false, message.iter());
-    match result {
-        Ok(false) => warn!("systemd hasn't been notified"),
-        Err(e) => error!("error notifying systemd: {}", e),
-        _ => (),
-    }
-}
+        tokio_runtime.spawn(crate::systemd::watchdog());
 
-pub fn map_to_errno(error: Error) -> nix::Error {
-    let raw_error = error.raw_os_error();
-    std::mem::drop(error);
-    match raw_error {
-        Some(errno) => nix::Error::Sys(nix::errno::Errno::from_i32(errno)),
-        _ => nix::Error::Sys(nix::errno::Errno::UnknownErrno),
+        tokio_runtime.spawn(crate::systemd::notify_about_start());
+
+        tokio_runtime.block_on(crate::terminator::terminator(self.terminator))?;
+
+        Ok(())
     }
 }

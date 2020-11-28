@@ -9,6 +9,8 @@ User=alerter
 Group=alerter
 WorkingDirectory=/var/lib/alerter
 Restart=on-failure
+WatchdogSec=5
+WatchdogSignal=SIGTERM
 
 NoNewPrivileges=true
 LimitNOFILE=20

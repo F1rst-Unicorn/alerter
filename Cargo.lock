@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "alerter"
-version = "1.0.7"
+version = "1.0.8"
 dependencies = [
  "chrono",
  "clap",

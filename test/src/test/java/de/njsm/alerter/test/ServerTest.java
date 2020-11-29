@@ -39,6 +39,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static de.njsm.alerter.test.Config.SOCKET_PATH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -60,6 +61,7 @@ public class ServerTest {
     public void setup(MockServerClient client) throws IOException {
         client.reset();
         new File(QUEUE_PATH).delete();
+        new File(SOCKET_PATH).delete();
 
         alerter = Runtime.getRuntime().exec(new String[]{
                 Config.getServerBinaryPath(),
@@ -140,7 +142,7 @@ public class ServerTest {
 
     @Test
     void illegalMessageIsIgnored(MockServerClient client) throws Exception {
-        File socketFile = new File(Config.SOCKET_PATH);
+        File socketFile = new File(SOCKET_PATH);
         AFUNIXSocket sock = AFUNIXSocket.newInstance();
         sock.connect(new AFUNIXSocketAddress(socketFile));
 

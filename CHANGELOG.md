@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+* Fix termination during startup if no socket is present from a previous run
+
 ## [1.0.7]
 
 ### Maintenance

@@ -128,7 +128,13 @@ impl Listener {
 
     fn build_listener(socket_path: &str) -> Result<UnixListener, Error> {
         debug!("Setting up socket");
-        remove_file(socket_path)?;
+        match remove_file(socket_path) {
+            Err(e) => match e.kind() {
+                std::io::ErrorKind::NotFound => Ok(()),
+                _ => Err(e),
+            },
+            ok => ok,
+        }?;
 
         let listener = UnixListener::bind(socket_path)?;
 

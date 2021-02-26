@@ -17,11 +17,82 @@
 
 use crate::message::Message;
 
+use std::collections::BTreeMap;
+
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
 use log::debug;
 use log::warn;
+
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
+
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+pub struct BackendMessage {
+    pub channel: Option<String>,
+
+    pub username: String,
+
+    pub attachments: Vec<Attachment>,
+}
+
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+pub struct Attachment {
+    pub color: String,
+
+    pub title: String,
+
+    pub title_link: Option<String>,
+
+    pub text: String,
+
+    pub fields: Vec<Field>,
+
+    pub footer: String,
+
+    pub ts: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Field {
+    pub title: String,
+
+    pub value: String,
+
+    pub short: bool,
+}
+
+impl From<&Message> for BackendMessage {
+    fn from(m: &Message) -> Self {
+        let attachment = Attachment {
+            title: m.title.to_string(),
+            title_link: m.link.clone(),
+            text: m.text.to_string(),
+            color: m.level.clone().into(),
+            footer: m.version.to_string(),
+            ts: m.timestamp,
+            fields: transform_fields(&m.fields),
+        };
+
+        Self {
+            username: crate::util::hostname(),
+            channel: m.channel.clone(),
+            attachments: vec![attachment],
+        }
+    }
+}
+
+fn transform_fields(fields: &BTreeMap<String, String>) -> Vec<Field> {
+    fields
+        .iter()
+        .map(|(k, v)| Field {
+            title: k.to_string(),
+            value: v.to_string(),
+            short: true,
+        })
+        .collect()
+}
 
 pub struct Slack {
     webhook_url: String,
@@ -84,9 +155,15 @@ impl Slack {
     }
 
     async fn send_message(&self, message: &Message) -> Result<(), ()> {
+        let backend_message = BackendMessage::from(message);
+
         let client = reqwest::Client::builder().build().map_err(|_| ())?;
 
-        let response = client.post(&self.webhook_url).json(message).send().await;
+        let response = client
+            .post(&self.webhook_url)
+            .json(&backend_message)
+            .send()
+            .await;
 
         match response {
             Ok(r) => match r.status().as_u16() {

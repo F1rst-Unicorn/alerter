@@ -22,7 +22,8 @@ use tokio::io::AsyncWriteExt;
 use tokio::io::BufReader;
 use tokio::io::BufWriter;
 use tokio::io::ErrorKind;
-use tokio::stream::StreamExt;
+
+use tokio_stream::StreamExt;
 
 use log::{debug, error, info, warn};
 
@@ -122,8 +123,7 @@ impl Spooler {
         };
 
         let reader = BufReader::new(file);
-        let result = reader
-            .lines()
+        let result = tokio_stream::wrappers::LinesStream::new(reader.lines())
             .filter(Result::is_ok)
             .map(Result::unwrap)
             .map(|s| serde_json::from_str::<Message>(&s))

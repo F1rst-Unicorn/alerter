@@ -22,9 +22,11 @@ use nix::sys::stat;
 
 use tokio::io::AsyncReadExt;
 use tokio::net::UnixListener;
-use tokio::stream::StreamExt;
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc::Sender;
+use tokio_stream::StreamExt;
+
+use tokio_stream::wrappers::UnixListenerStream;
 
 use std::ffi::CString;
 use std::fs::remove_file;
@@ -37,7 +39,7 @@ use log::warn;
 pub struct Listener {
     socket_path: String,
 
-    listener: Option<tokio::net::UnixListener>,
+    listener: Option<UnixListenerStream>,
 
     slack: Sender<Message>,
 
@@ -126,7 +128,7 @@ impl Listener {
         Ok(())
     }
 
-    fn build_listener(socket_path: &str) -> Result<UnixListener, Error> {
+    fn build_listener(socket_path: &str) -> Result<UnixListenerStream, Error> {
         debug!("Setting up socket");
         match remove_file(socket_path) {
             Err(e) => match e.kind() {
@@ -153,6 +155,6 @@ impl Listener {
         }
 
         debug!("Input uds open");
-        Ok(listener)
+        Ok(UnixListenerStream::new(listener))
     }
 }

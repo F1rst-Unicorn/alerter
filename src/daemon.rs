@@ -15,7 +15,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::config::Matrix as MatrixConfig;
 use crate::listener::Listener;
+use crate::matrix::Matrix;
 use crate::slack::Slack;
 use crate::spool_dispatcher::SpoolDispatcher;
 use crate::spooler::Spooler;
@@ -31,12 +33,20 @@ pub struct Daemon {
 
     slack: Slack,
 
+    matrix: Matrix,
+
     terminator: Sender<()>,
 }
 
 impl Daemon {
-    pub fn new(socket_path: &str, spool_path: &str, webhook_url: &str) -> Option<Self> {
-        let (to_slack, slack_receiver) = tokio::sync::mpsc::channel(5);
+    pub fn new(
+        socket_path: &str,
+        spool_path: &str,
+        webhook_url: &str,
+        matrix: &MatrixConfig,
+    ) -> Option<Self> {
+        let (_, slack_receiver) = tokio::sync::mpsc::channel(5);
+        let (to_matrix, matrix_receiver) = tokio::sync::mpsc::channel(5);
         let (to_spooler, spooler_receiver) = tokio::sync::mpsc::channel(5);
         let (terminator, terminatee) = tokio::sync::broadcast::channel(1);
 
@@ -44,32 +54,47 @@ impl Daemon {
 
         let slack = Slack::new(
             slack_receiver,
-            to_spooler,
+            to_spooler.clone(),
             webhook_url.to_string(),
             terminatee,
         );
 
         let spool_dispatcher = SpoolDispatcher::new(
             spooler,
-            to_slack.clone(),
+            to_matrix.clone(),
             spooler_receiver,
             terminator.subscribe(),
         );
 
-        let listener = Listener::new(socket_path, to_slack, terminator.subscribe());
+        let listener = Listener::new(socket_path, to_matrix, terminator.subscribe());
+
+        let matrix = match Matrix::new(
+            &matrix.user,
+            &matrix.password,
+            &matrix.channel,
+            matrix_receiver,
+            to_spooler,
+            terminator.subscribe(),
+        ) {
+            Err(e) => {
+                error!("{}", e);
+                return None;
+            }
+            Ok(v) => v,
+        };
 
         Some(Self {
             listener,
             spool_dispatcher,
             slack,
+            matrix,
             terminator,
         })
     }
 
     pub fn run(self) -> Result<(), tokio::io::Error> {
-        let mut tokio_runtime = tokio::runtime::Builder::new()
-            .threaded_scheduler()
-            .core_threads(3)
+        let tokio_runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(3)
             .enable_all()
             .thread_name("tokio runtime")
             .build()?;
@@ -82,6 +107,18 @@ impl Daemon {
             }
             Ok(v) => v,
         };
+
+        let matrix = self.matrix;
+        let mut matrix = match tokio_runtime.block_on(matrix.login()) {
+            Err(e) => {
+                error!("{}", e);
+                return Ok(());
+            }
+            Ok(v) => v,
+        };
+        tokio_runtime.spawn(async move {
+            matrix.run().await;
+        });
 
         let mut slack = self.slack;
         tokio_runtime.spawn(async move {

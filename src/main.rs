@@ -22,12 +22,14 @@ pub mod config;
 pub mod daemon;
 pub mod listener;
 pub mod logging;
+pub mod matrix;
 pub mod message;
 pub mod slack;
 pub mod spool_dispatcher;
 pub mod spooler;
 pub mod systemd;
 pub mod terminator;
+pub mod util;
 
 use daemon::Daemon;
 
@@ -56,6 +58,7 @@ fn main() {
         &config.socket_path,
         &config.spool_path.unwrap(),
         &config.webhook.unwrap(),
+        &config.matrix.unwrap(),
     ) {
         None => {}
         Some(daemon) => match daemon.run() {

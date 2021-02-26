@@ -30,6 +30,13 @@ nix = "0.19"
 chrono = "0.4.15"
 libc = "0.2.76"
 systemd = "0.8"
+url = "2.1.1"
+tracing-subscriber = "0.2.15"
+thiserror = "1.0.24"
+
+[dependencies.tokio-stream]
+version = "0.1.3"
+features = ["io-util", "net"]
 
 [dependencies.serde]
 version = "1.0.115"
@@ -45,8 +52,12 @@ default-features = false
 features = ["file", "pattern_encoder", "console_appender", "yaml_format", "json_encoder"]
 
 [dependencies.tokio]
-version = "0.2"
+version = "1.2.0"
 features = ["full"]
+
+[dependencies.matrix-sdk]
+git = "https://github.com/matrix-org/matrix-rust-sdk.git"
+branch = "master"
 
 [build-dependencies]
 vergen = "3"

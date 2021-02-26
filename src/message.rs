@@ -15,53 +15,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::collections::BTreeMap;
+
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Message {
+    pub title: String,
+
+    pub text: String,
+
+    pub level: Level,
+
+    pub link: Option<String>,
+
+    pub fields: BTreeMap<String, String>,
+
     pub channel: Option<String>,
 
-    pub username: Option<String>,
+    pub timestamp: i64,
 
-    pub text: Option<String>,
-
-    pub icon_emoji: Option<String>,
-
-    pub attachments: Option<Vec<Attachment>>,
-}
-
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
-pub struct Attachment {
-    pub fallback: Option<String>,
-
-    pub color: Option<String>,
-
-    pub pretext: Option<String>,
-
-    pub author_name: Option<String>,
-
-    pub author_link: Option<String>,
-
-    pub author_icon: Option<String>,
-
-    pub title: Option<String>,
-
-    pub title_link: Option<String>,
-
-    pub text: Option<String>,
-
-    pub fields: Option<Vec<Field>>,
-
-    pub image_url: Option<String>,
-
-    pub thumb_url: Option<String>,
-
-    pub footer: Option<String>,
-
-    pub footer_icon: Option<String>,
-
-    pub ts: Option<i64>,
+    pub version: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -70,6 +45,12 @@ pub enum Level {
     WARN,
     ERROR,
     UNKNOWN,
+}
+
+impl Default for Level {
+    fn default() -> Self {
+        Level::UNKNOWN
+    }
 }
 
 impl From<Level> for String {
@@ -82,13 +63,4 @@ impl From<Level> for String {
         }
         .to_string()
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Field {
-    pub title: String,
-
-    pub value: String,
-
-    pub short: bool,
 }

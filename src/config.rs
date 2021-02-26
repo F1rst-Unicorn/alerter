@@ -33,6 +33,17 @@ pub struct Config {
     pub spool_path: Option<String>,
 
     pub webhook: Option<String>,
+
+    pub matrix: Option<Matrix>,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct Matrix {
+    pub user: String,
+
+    pub password: String,
+
+    pub channel: String,
 }
 
 impl Config {

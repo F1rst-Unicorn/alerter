@@ -19,14 +19,14 @@ pub mod alert_cli_parser;
 pub mod config;
 pub mod logging;
 pub mod message;
+pub mod util;
 
-use crate::message::Attachment;
-use crate::message::Field;
+use crate::message::Level;
 use crate::message::Message;
 
+use std::collections::BTreeMap;
 use std::io::Write;
 use std::os::unix::net::UnixStream;
-use std::process::exit;
 
 use log::debug;
 use log::error;
@@ -55,70 +55,55 @@ fn main() {
 }
 
 fn compose_message_from_arguments(args: clap::ArgMatches) -> Message {
-    let mut result: Message = Default::default();
+    Message {
+        title: args
+            .value_of(alert_cli_parser::FLAG_TITLE)
+            .map(str::to_string)
+            .unwrap_or_default(),
 
-    result.username = config::read_file("/etc/hostname")
-        .map(|v| v.trim().to_string())
-        .ok();
-    result.channel = args
-        .value_of(alert_cli_parser::FLAG_CHANNEL)
-        .map(str::to_string);
+        text: args
+            .value_of(alert_cli_parser::FLAG_TEXT)
+            .map(str::to_string)
+            .unwrap_or_default(),
 
-    let color = parse_color(args.value_of(alert_cli_parser::FLAG_LEVEL));
+        channel: args
+            .value_of(alert_cli_parser::FLAG_CHANNEL)
+            .map(str::to_string),
 
-    let mut attachment: Attachment = Default::default();
-    attachment.title = args
-        .value_of(alert_cli_parser::FLAG_TITLE)
-        .map(str::to_string);
-    attachment.title_link = args
-        .value_of(alert_cli_parser::FLAG_TITLE_LINK)
-        .map(str::to_string);
-    attachment.text = args
-        .value_of(alert_cli_parser::FLAG_TEXT)
-        .map(str::to_string);
-    attachment.color = color;
-    attachment.footer = Some("alert v".to_string() + env!("CARGO_PKG_VERSION"));
-    attachment.ts = Some(chrono::Utc::now().timestamp());
-    attachment.fields = parse_additional_fields(args.values_of(alert_cli_parser::FLAG_FIELD));
+        level: args
+            .value_of(alert_cli_parser::FLAG_LEVEL)
+            .map(serde_yaml::from_str::<Level>)
+            .map(Result::ok)
+            .flatten()
+            .unwrap_or_default(),
 
-    result.attachments = Some(vec![attachment]);
-    result
-}
+        link: args
+            .value_of(alert_cli_parser::FLAG_TITLE_LINK)
+            .map(str::to_string),
 
-fn parse_color(color: Option<&str>) -> Option<String> {
-    let color = color
-        .map(serde_yaml::from_str::<message::Level>)
-        .map(Result::ok)
-        .flatten()
-        .map(From::from);
+        version: env!("CARGO_BIN_NAME").to_string() + " v" + env!("CARGO_PKG_VERSION"),
 
-    if color.is_none() {
-        error!("Invalid level given");
-        exit(1);
+        timestamp: chrono::Utc::now().timestamp(),
+
+        fields: parse_additional_fields(args.values_of(alert_cli_parser::FLAG_FIELD)),
     }
-    color
 }
 
-fn parse_additional_fields(values: Option<clap::Values>) -> Option<Vec<Field>> {
-    let mut fields = Vec::new();
+fn parse_additional_fields(values: Option<clap::Values>) -> BTreeMap<String, String> {
+    let mut fields = BTreeMap::default();
     if let Some(values) = values {
         for item in values {
             let mut split = item.splitn(2, ':');
             if let Some(key) = split.next() {
                 if let Some(value) = split.next() {
-                    let field = Field {
-                        title: key.to_string(),
-                        value: value.to_string(),
-                        short: true,
-                    };
-                    fields.push(field);
+                    fields.insert(key.to_string(), value.to_string());
                 } else {
                     warn!("Skipping field '{}' because of missing ':'", item);
                 }
             }
         }
     }
-    Some(fields)
+    fields
 }
 
 fn send_message(socket_path: &str, message: Message) {

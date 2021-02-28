@@ -52,14 +52,8 @@ fn main() {
     debug!("Config is at {}", config_path);
 
     let config = config::parse_config(config_path);
-    config.validate();
 
-    match Daemon::new(
-        &config.socket_path,
-        &config.spool_path.unwrap(),
-        &config.webhook.unwrap(),
-        &config.matrix.unwrap(),
-    ) {
+    match Daemon::new(config) {
         None => {}
         Some(daemon) => match daemon.run() {
             Err(e) => {

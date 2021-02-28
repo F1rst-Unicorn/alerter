@@ -20,6 +20,9 @@ use std::collections::BTreeMap;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
+use chrono::DateTime;
+use chrono::Local;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Message {
     pub title: String,
@@ -28,13 +31,15 @@ pub struct Message {
 
     pub level: Level,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
 
     pub fields: BTreeMap<String, String>,
 
     pub channel: Option<String>,
 
-    pub timestamp: i64,
+    #[serde(with = "chrono_serde")]
+    pub timestamp: DateTime<Local>,
 
     pub version: String,
 }
@@ -62,5 +67,26 @@ impl From<Level> for String {
             _ => "#aa44ff",
         }
         .to_string()
+    }
+}
+
+mod chrono_serde {
+    use chrono::{DateTime, Local, TimeZone};
+    use serde::{self, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(date: &DateTime<Local>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = date.timestamp();
+        serializer.serialize_i64(s)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Local>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let secs = i64::deserialize(deserializer)?;
+        Ok(Local.timestamp(secs, 0))
     }
 }

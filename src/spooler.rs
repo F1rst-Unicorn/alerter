@@ -126,6 +126,7 @@ impl Spooler {
         let result = tokio_stream::wrappers::LinesStream::new(reader.lines())
             .filter(Result::is_ok)
             .map(Result::unwrap)
+            .filter(|v| !v.is_empty())
             .map(|s| serde_json::from_str::<Message>(&s))
             .map(|v| match v {
                 Ok(m) => self.queue.push(m),

@@ -71,7 +71,7 @@ impl From<&Message> for BackendMessage {
             text: m.text.to_string(),
             color: m.level.clone().into(),
             footer: m.version.to_string(),
-            ts: m.timestamp,
+            ts: m.timestamp.timestamp(),
             fields: transform_fields(&m.fields),
         };
 

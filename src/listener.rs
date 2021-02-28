@@ -36,6 +36,8 @@ use log::debug;
 use log::error;
 use log::warn;
 
+use thiserror::Error;
+
 pub struct Listener {
     socket_path: String,
 
@@ -46,22 +48,12 @@ pub struct Listener {
     terminator: Receiver<()>,
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum Error {
-    StdIoError(std::io::Error),
-    NixError(nix::Error),
-}
-
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Self {
-        Error::StdIoError(e)
-    }
-}
-
-impl From<nix::Error> for Error {
-    fn from(e: nix::Error) -> Self {
-        Error::NixError(e)
-    }
+    #[error("")]
+    StdIoError(#[from] std::io::Error),
+    #[error("")]
+    NixError(#[from] nix::Error),
 }
 
 impl Listener {

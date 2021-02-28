@@ -30,11 +30,23 @@ const EXIT_CODE: i32 = 1;
 pub struct Config {
     pub socket_path: String,
 
-    pub spool_path: Option<String>,
+    pub spool_path: String,
 
-    pub webhook: Option<String>,
+    pub backend: Backend,
+}
 
-    pub matrix: Option<Matrix>,
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub enum Backend {
+    #[serde(alias = "slack")]
+    Slack(Slack),
+
+    #[serde(alias = "matrix")]
+    Matrix(Matrix),
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct Slack {
+    pub webhook: String,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -43,20 +55,9 @@ pub struct Matrix {
 
     pub password: String,
 
-    pub channel: String,
-}
+    pub room: String,
 
-impl Config {
-    pub fn validate(&self) {
-        if self.webhook.is_none() {
-            error!("No webhook configured");
-            exit(EXIT_CODE);
-        }
-        if self.spool_path.is_none() {
-            error!("No spool_path configured");
-            exit(EXIT_CODE);
-        }
-    }
+    pub message_template: String,
 }
 
 pub fn parse_config(file_path: &str) -> Config {

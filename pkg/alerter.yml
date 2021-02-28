@@ -1,3 +1,44 @@
 socket_path: /tmp/.alerter.sock
 spool_path: /var/lib/alerter/spool_queue
-webhook: <hook>
+backend:
+# slack:
+#   webhook: https://...
+  matrix:
+    user: user:homeserver.example
+    password: changeme
+    channel: "!changeme:homeserver.example"
+    message_template: |
+      {% if m.link is defined %}
+        <h3>
+          {% if m.level != "UNKNOWN" %}
+            <span data-mx-color="{{ level_color }}">
+              {{ m.level }}
+            </span>
+          {% endif %}
+          <a href="{{ m.link }}">{{ m.title }}</a>
+        </h3>
+        {% else %}
+          <h3>
+            {% if m.level != "UNKNOWN" %}
+              <span data-mx-color="{{ level_color }}">
+                {{ m.level }}
+              </span>
+            {% endif %}
+            {{ m.title }}
+          </h3>
+      {% endif %}
+      <p>{{ m.text }}</p>
+      {% for key, value in m.fields %}
+        {% if loop.first %}
+          <p>
+            <ul>
+        {% endif %}
+              <li>{{ key }}: {{ value}}</li>
+        {% if loop.last %}
+            </ul>
+          </p>
+        {% endif %}
+      {% endfor %}
+      <sup>
+        {{ m.timestamp | date(format="%Y-%m-%d %H:%M:%S") }} {{ m.version }}
+      </sup>

@@ -15,7 +15,10 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::config::Backend;
+use crate::config::Config;
 use crate::config::Matrix as MatrixConfig;
+use crate::config::Slack as SlackConfig;
 use crate::listener::Listener;
 use crate::matrix::Matrix;
 use crate::slack::Slack;
@@ -31,33 +34,21 @@ pub struct Daemon {
 
     spool_dispatcher: SpoolDispatcher,
 
-    slack: Slack,
+    slack: Option<Slack>,
 
-    matrix: Matrix,
+    matrix: Option<Matrix>,
 
     terminator: Sender<()>,
 }
 
 impl Daemon {
-    pub fn new(
-        socket_path: &str,
-        spool_path: &str,
-        webhook_url: &str,
-        matrix: &MatrixConfig,
-    ) -> Option<Self> {
+    pub fn new(config: Config) -> Option<Self> {
         let (_, slack_receiver) = tokio::sync::mpsc::channel(5);
         let (to_matrix, matrix_receiver) = tokio::sync::mpsc::channel(5);
         let (to_spooler, spooler_receiver) = tokio::sync::mpsc::channel(5);
         let (terminator, terminatee) = tokio::sync::broadcast::channel(1);
 
-        let spooler = Spooler::new(spool_path);
-
-        let slack = Slack::new(
-            slack_receiver,
-            to_spooler.clone(),
-            webhook_url.to_string(),
-            terminatee,
-        );
+        let spooler = Spooler::new(&config.spool_path);
 
         let spool_dispatcher = SpoolDispatcher::new(
             spooler,
@@ -66,21 +57,38 @@ impl Daemon {
             terminator.subscribe(),
         );
 
-        let listener = Listener::new(socket_path, to_matrix, terminator.subscribe());
+        let listener = Listener::new(&config.socket_path, to_matrix, terminator.subscribe());
 
-        let matrix = match Matrix::new(
-            &matrix.user,
-            &matrix.password,
-            &matrix.channel,
-            matrix_receiver,
-            to_spooler,
-            terminator.subscribe(),
-        ) {
-            Err(e) => {
-                error!("{}", e);
-                return None;
+        let (slack, matrix) = match config.backend {
+            Backend::Slack(SlackConfig { webhook }) => {
+                let slack = Slack::new(slack_receiver, to_spooler, webhook, terminatee);
+
+                (Some(slack), None)
             }
-            Ok(v) => v,
+            Backend::Matrix(MatrixConfig {
+                user,
+                password,
+                room,
+                message_template,
+            }) => {
+                let matrix = match Matrix::new(
+                    &user,
+                    &password,
+                    &room,
+                    &message_template,
+                    matrix_receiver,
+                    to_spooler,
+                    terminator.subscribe(),
+                ) {
+                    Err(e) => {
+                        error!("{}", e);
+                        return None;
+                    }
+                    Ok(v) => v,
+                };
+
+                (None, Some(matrix))
+            }
         };
 
         Some(Self {
@@ -109,21 +117,25 @@ impl Daemon {
         };
 
         let matrix = self.matrix;
-        let mut matrix = match tokio_runtime.block_on(matrix.login()) {
-            Err(e) => {
-                error!("{}", e);
-                return Ok(());
-            }
-            Ok(v) => v,
-        };
-        tokio_runtime.spawn(async move {
-            matrix.run().await;
-        });
+        if let Some(matrix) = matrix {
+            let mut matrix = match tokio_runtime.block_on(matrix.login()) {
+                Err(e) => {
+                    error!("{}", e);
+                    return Ok(());
+                }
+                Ok(v) => v,
+            };
+            tokio_runtime.spawn(async move {
+                matrix.run().await;
+            });
+        }
 
-        let mut slack = self.slack;
-        tokio_runtime.spawn(async move {
-            slack.send_messages().await;
-        });
+        let slack = self.slack;
+        if let Some(mut slack) = slack {
+            tokio_runtime.spawn(async move {
+                slack.send_messages().await;
+            });
+        }
 
         let spool_dispatcher = self.spool_dispatcher;
         tokio_runtime.spawn(spool_dispatcher.run());

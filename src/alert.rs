@@ -28,6 +28,8 @@ use std::collections::BTreeMap;
 use std::io::Write;
 use std::os::unix::net::UnixStream;
 
+use chrono::Local;
+
 use log::debug;
 use log::error;
 use log::warn;
@@ -83,7 +85,7 @@ fn compose_message_from_arguments(args: clap::ArgMatches) -> Message {
 
         version: env!("CARGO_BIN_NAME").to_string() + " v" + env!("CARGO_PKG_VERSION"),
 
-        timestamp: chrono::Utc::now().timestamp(),
+        timestamp: Local::now(),
 
         fields: parse_additional_fields(args.values_of(alert_cli_parser::FLAG_FIELD)),
     }

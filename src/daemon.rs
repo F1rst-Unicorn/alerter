@@ -43,7 +43,6 @@ pub struct Daemon {
 
 impl Daemon {
     pub fn new(config: Config) -> Option<Self> {
-        let (_, slack_receiver) = tokio::sync::mpsc::channel(5);
         let (to_matrix, matrix_receiver) = tokio::sync::mpsc::channel(5);
         let (to_spooler, spooler_receiver) = tokio::sync::mpsc::channel(5);
         let (terminator, terminatee) = tokio::sync::broadcast::channel(1);
@@ -61,7 +60,7 @@ impl Daemon {
 
         let (slack, matrix) = match config.backend {
             Backend::Slack(SlackConfig { webhook }) => {
-                let slack = Slack::new(slack_receiver, to_spooler, webhook, terminatee);
+                let slack = Slack::new(matrix_receiver, to_spooler, webhook, terminatee);
 
                 (Some(slack), None)
             }

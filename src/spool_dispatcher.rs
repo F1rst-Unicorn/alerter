@@ -70,7 +70,7 @@ impl SpoolDispatcher {
                             self.sender.send(message),
                             self.spooler.store()
                         ) {
-                            debug!("Spool dispatcher shutting down");
+                            debug!("Spool dispatcher shutting down as sender failed");
                             return;
                         }
                     }
@@ -86,13 +86,13 @@ impl SpoolDispatcher {
                             self.backoff.reset();
                         }
                         None => {
-                            debug!("Spool dispatcher shutting down");
+                            debug!("Spool dispatcher shutting down as receiver is closed");
                             return;
                         }
                     }
                 }
                 _ = self.terminator.recv() => {
-                    debug!("Spool dispatcher shutting down");
+                    debug!("Spool dispatcher shutting down on termination signal");
                     return;
                 }
             }

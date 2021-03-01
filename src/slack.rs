@@ -134,20 +134,20 @@ impl Slack {
                         debug!("Sending message");
                         if self.send_message(&message).await.is_err() {
                             if self.send_reporter.send(Some(message)).await.is_err() {
-                                debug!("Slack shutting down");
+                                debug!("Slack shutting down because send_reporter is down after trying to report error");
                                 return;
                             }
                         } else if self.send_reporter.send(None).await.is_err() {
-                            debug!("Slack shutting down");
+                            debug!("Slack shutting down because send_reporter is down");
                             return;
                         }
                     } else {
-                        debug!("Slack shutting down");
+                        debug!("Slack shutting down because spooler is down");
                         return;
                     }
                 }
                 _ = self.terminator.recv() => {
-                    debug!("Slack shutting down");
+                    debug!("Slack shutting down on termination signal");
                     return;
                 }
             }

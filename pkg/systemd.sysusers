@@ -1,2 +1,2 @@
-u alerter - "Alerter to Slack" /var/lib/alerter /usr/bin/nologin
+u alerter - "Alerter to chat servers" /var/lib/alerter /usr/bin/nologin
 g alerter - -

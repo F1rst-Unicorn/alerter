@@ -1,4 +1,4 @@
-/*  alerter: Alerter to Slack
+/*  alerter: Alerter to chat servers
  *  Copyright (C) 2019 The alerter developers
  *
  *  This program is free software: you can redistribute it and/or modify

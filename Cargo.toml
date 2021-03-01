@@ -26,7 +26,7 @@ log = "0.4.11"
 serde_derive = "1.0.115"
 serde_yaml = "0.8.13"
 serde_json = "1.0.57"
-nix = "0.19"
+nix = "0.20"
 chrono = "0.4.15"
 libc = "0.2.76"
 systemd = "0.8"
@@ -44,13 +44,12 @@ version = "1.0.115"
 features = ["derive"]
 
 [dependencies.reqwest]
-version = "0.10.8"
+version = "0.11"
 features = ["json", "blocking"]
 
 [dependencies.log4rs]
-version = "0.13"
-default-features = false
-features = ["file", "pattern_encoder", "console_appender", "yaml_format", "json_encoder"]
+version = "1"
+#features = ["json_encoder", "pattern_encoder", "console_appender", "yaml_format"]
 
 [dependencies.tokio]
 version = "1.2.0"
@@ -61,4 +60,4 @@ git = "https://github.com/matrix-org/matrix-rust-sdk.git"
 branch = "master"
 
 [build-dependencies]
-vergen = "3"
+vergen = "4"

@@ -6,7 +6,7 @@ backend:
   matrix:
     user: user:homeserver.example
     password: changeme
-    channel: "!changeme:homeserver.example"
+    room: "!changeme:homeserver.example"
     message_template: |
       {% if m.link is defined %}
         <h3>
@@ -39,6 +39,6 @@ backend:
           </p>
         {% endif %}
       {% endfor %}
-      <sup>
+      <sub>
         {{ m.timestamp | date(format="%Y-%m-%d %H:%M:%S") }} {{ m.version }}
-      </sup>
+      </sub>

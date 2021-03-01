@@ -34,13 +34,6 @@ public class ClientTest {
 
     private MessageCaptor captor;
 
-    private interface ColorCode {
-        String OK = "#44bb77";
-        String WARN = "#ffaa44";
-        String ERROR = "#ff5566";
-        String UNKNOWN = "#aa44ff";
-    }
-
     private interface Level {
         String OK = "OK";
         String WARN = "WARN";
@@ -67,8 +60,7 @@ public class ClientTest {
                 .call();
 
         captor.verify()
-                .hasText(text)
-                .hasHostname();
+                .hasText(text);
     }
 
     @Test
@@ -84,8 +76,7 @@ public class ClientTest {
 
         captor.verify()
                 .hasText(text)
-                .hasChannel(channel)
-                .hasHostname();
+                .hasChannel(channel);
     }
 
     @Test
@@ -101,8 +92,7 @@ public class ClientTest {
 
         captor.verify()
                 .hasText(text)
-                .hasTitle(title)
-                .hasHostname();
+                .hasTitle(title);
     }
 
     @Test
@@ -121,8 +111,7 @@ public class ClientTest {
         captor.verify()
                 .hasText(text)
                 .hasTitle(title)
-                .hasTitleLink(titleLink)
-                .hasHostname();
+                .hasTitleLink(titleLink);
     }
 
     @Test
@@ -136,8 +125,7 @@ public class ClientTest {
 
         captor.verify()
                 .hasText(text)
-                .hasColor(ColorCode.UNKNOWN)
-                .hasHostname();
+                .hasColor(Level.UNKNOWN);
     }
 
     @Test
@@ -152,8 +140,7 @@ public class ClientTest {
 
         captor.verify()
                 .hasText(text)
-                .hasColor(ColorCode.OK)
-                .hasHostname();
+                .hasColor(Level.OK);
     }
 
     @Test
@@ -168,8 +155,7 @@ public class ClientTest {
 
         captor.verify()
                 .hasText(text)
-                .hasColor(ColorCode.WARN)
-                .hasHostname();
+                .hasColor(Level.WARN);
     }
 
     @Test
@@ -184,8 +170,7 @@ public class ClientTest {
 
         captor.verify()
                 .hasText(text)
-                .hasColor(ColorCode.ERROR)
-                .hasHostname();
+                .hasColor(Level.ERROR);
     }
 
     @Test
@@ -200,8 +185,7 @@ public class ClientTest {
 
         captor.verify()
                 .hasText(text)
-                .hasColor(ColorCode.UNKNOWN)
-                .hasHostname();
+                .hasColor(Level.UNKNOWN);
     }
 
     @Test
@@ -219,7 +203,6 @@ public class ClientTest {
         captor.verify()
                 .hasText(text)
                 .hasField("simple", "simple")
-                .hasField("key", ":value:test:")
-                .hasHostname();
+                .hasField("key", ":value:test:");
     }
 }

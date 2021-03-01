@@ -18,5 +18,7 @@
 ---
 
 socket_path: alert.sock
-webhook: "http://127.0.0.1:17553/slack"
 spool_path: src/test/resources/queue
+backend:
+  slack:
+    webhook: "http://127.0.0.1:17553/slack"

@@ -26,10 +26,8 @@ import io.burt.jmespath.Expression;
 import io.burt.jmespath.JmesPath;
 import io.burt.jmespath.gson.GsonRuntime;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class MessageAsserter {
@@ -51,21 +49,21 @@ public class MessageAsserter {
     }
 
     private void verifyTimestampSet() {
-        JsonElement actualText = getJsonElement("attachments[0].ts");
+        JsonElement actualText = getJsonElement("timestamp");
         assertTrue(1606503490 < actualText.getAsLong());
     }
 
     private void verifyFooterSet() {
-        JsonElement actualText = getJsonElement("attachments[0].footer");
+        JsonElement actualText = getJsonElement("version");
         assertTrue(actualText.getAsString().startsWith("alert v"));
     }
 
     public MessageAsserter hasText(String text) {
-        return verifyJmesPath("attachments[0].text", text);
+        return verifyJmesPath("text", text);
     }
 
     public MessageAsserter hasTitle(String title) {
-        return verifyJmesPath("attachments[0].title", title);
+        return verifyJmesPath("title", title);
     }
 
     public MessageAsserter hasChannel(String channel) {
@@ -73,24 +71,15 @@ public class MessageAsserter {
     }
 
     public MessageAsserter hasTitleLink(String titleLink) {
-        return verifyJmesPath("attachments[0].title_link", titleLink);
+        return verifyJmesPath("link", titleLink);
     }
 
     public MessageAsserter hasColor(String color) {
-        return verifyJmesPath("attachments[0].color", color);
+        return verifyJmesPath("level", color);
     }
 
     public MessageAsserter hasField(String key, String value) {
-        return verifyJmesPath("attachments[0].fields[?title == '" + key + "'].value", value);
-    }
-
-    public void hasHostname() {
-        try {
-            String hostname = InetAddress.getLocalHost().getCanonicalHostName();
-            verifyJmesPath("username", hostname);
-        } catch (UnknownHostException e) {
-            fail();
-        }
+        return verifyJmesPath("fields." + key, value);
     }
 
     private MessageAsserter verifyJmesPath(String jmesPath, String content) {

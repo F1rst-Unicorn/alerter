@@ -24,6 +24,18 @@ use chrono::DateTime;
 use chrono::Local;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum Packet {
+    Message(Message),
+
+    Sas(Sas),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Sas {
+    pub input: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Message {
     pub title: String,
 

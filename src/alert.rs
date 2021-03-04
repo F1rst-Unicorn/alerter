@@ -23,6 +23,8 @@ pub mod util;
 
 use crate::message::Level;
 use crate::message::Message;
+use crate::message::Packet;
+use crate::message::Sas;
 
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -51,13 +53,21 @@ fn main() {
 
     let config = config::parse_config(config_path);
 
-    let message = compose_message_from_arguments(arguments);
+    let packet = if let Some(sas) = arguments.value_of(alert_cli_parser::FLAG_VERIFY) {
+        compose_sas_verification(sas)
+    } else {
+        compose_message_from_arguments(arguments)
+    };
 
-    send_message(&config.socket_path, message);
+    send_message(&config.socket_path, packet);
 }
 
-fn compose_message_from_arguments(args: clap::ArgMatches) -> Message {
-    Message {
+fn compose_sas_verification(sas: &str) -> Packet {
+    Packet::Sas(Sas { input: sas.to_string() })
+}
+
+fn compose_message_from_arguments(args: clap::ArgMatches) -> Packet {
+    Packet::Message(Message {
         title: args
             .value_of(alert_cli_parser::FLAG_TITLE)
             .map(str::to_string)
@@ -88,7 +98,7 @@ fn compose_message_from_arguments(args: clap::ArgMatches) -> Message {
         timestamp: Local::now(),
 
         fields: parse_additional_fields(args.values_of(alert_cli_parser::FLAG_FIELD)),
-    }
+    })
 }
 
 fn parse_additional_fields(values: Option<clap::Values>) -> BTreeMap<String, String> {
@@ -108,7 +118,7 @@ fn parse_additional_fields(values: Option<clap::Values>) -> BTreeMap<String, Str
     fields
 }
 
-fn send_message(socket_path: &str, message: Message) {
+fn send_message(socket_path: &str, packet: Packet) {
     let mut stream = match UnixStream::connect(socket_path) {
         Err(e) => {
             error!("Failed to open socket: {}", e);
@@ -117,9 +127,9 @@ fn send_message(socket_path: &str, message: Message) {
         Ok(v) => v,
     };
 
-    let raw_message = match serde_json::to_string(&message) {
+    let raw_message = match serde_json::to_string(&packet) {
         Err(e) => {
-            error!("Failed to message to string: {}", e);
+            error!("Failed to serialise message to string: {}", e);
             return;
         }
         Ok(v) => v,

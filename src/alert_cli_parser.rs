@@ -27,6 +27,7 @@ pub const FLAG_TEXT: &str = "TEXT";
 pub const FLAG_CHANNEL: &str = "CHANNEL";
 pub const FLAG_LEVEL: &str = "LEVEL";
 pub const FLAG_FIELD: &str = "FIELD";
+pub const FLAG_VERIFY: &str = "VERIFY";
 
 pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
     App::new("alert")
@@ -42,13 +43,22 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
             Arg::with_name(FLAG_TITLE)
                 .help("The title of the message")
                 .value_name("TITLE")
-                .required(true),
+                .required_unless(FLAG_VERIFY),
         )
         .arg(
             Arg::with_name(FLAG_TEXT)
                 .help("The content of the message")
                 .value_name("TEXT")
-                .required(true),
+                .required_unless(FLAG_VERIFY),
+        )
+        .arg(
+            Arg::with_name(FLAG_VERIFY)
+                .short("V")
+                .long("verify")
+                .help("Verify this matrix device")
+                .value_name("SAS")
+                .conflicts_with(FLAG_TITLE)
+                .conflicts_with(FLAG_TEXT),
         )
         .arg(
             Arg::with_name(FLAG_CONFIG)

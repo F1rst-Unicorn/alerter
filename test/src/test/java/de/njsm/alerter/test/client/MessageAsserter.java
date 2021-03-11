@@ -47,39 +47,38 @@ public class MessageAsserter {
         verifyTimestampSet();
         verifyFooterSet();
     }
-
     private void verifyTimestampSet() {
-        JsonElement actualText = getJsonElement("timestamp");
+        JsonElement actualText = getJsonElement("Message.timestamp");
         assertTrue(1606503490 < actualText.getAsLong());
     }
 
     private void verifyFooterSet() {
-        JsonElement actualText = getJsonElement("version");
+        JsonElement actualText = getJsonElement("Message.version");
         assertTrue(actualText.getAsString().startsWith("alert v"));
     }
 
     public MessageAsserter hasText(String text) {
-        return verifyJmesPath("text", text);
+        return verifyJmesPath("Message.text", text);
     }
 
     public MessageAsserter hasTitle(String title) {
-        return verifyJmesPath("title", title);
+        return verifyJmesPath("Message.title", title);
     }
 
     public MessageAsserter hasChannel(String channel) {
-        return verifyJmesPath("channel", channel);
+        return verifyJmesPath("Message.channel", channel);
     }
 
     public MessageAsserter hasTitleLink(String titleLink) {
-        return verifyJmesPath("link", titleLink);
+        return verifyJmesPath("Message.link", titleLink);
     }
 
     public MessageAsserter hasColor(String color) {
-        return verifyJmesPath("level", color);
+        return verifyJmesPath("Message.level", color);
     }
 
     public MessageAsserter hasField(String key, String value) {
-        return verifyJmesPath("fields." + key, value);
+        return verifyJmesPath("Message.fields." + key, value);
     }
 
     private MessageAsserter verifyJmesPath(String jmesPath, String content) {

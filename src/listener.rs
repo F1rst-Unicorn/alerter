@@ -16,6 +16,8 @@
  */
 
 use crate::message::Message;
+use crate::message::Packet;
+use crate::message::Sas;
 
 use nix::errno;
 use nix::sys::stat;
@@ -24,6 +26,7 @@ use tokio::io::AsyncReadExt;
 use tokio::net::UnixListener;
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::UnboundedSender;
 use tokio_stream::StreamExt;
 
 use tokio_stream::wrappers::UnixListenerStream;
@@ -45,6 +48,8 @@ pub struct Listener {
 
     slack: Sender<Message>,
 
+    verifier: UnboundedSender<Sas>,
+
     terminator: Receiver<()>,
 }
 
@@ -57,11 +62,17 @@ pub enum Error {
 }
 
 impl Listener {
-    pub fn new(socket_path: &str, slack: Sender<Message>, terminator: Receiver<()>) -> Self {
+    pub fn new(
+        socket_path: &str,
+        slack: Sender<Message>,
+        verifier: UnboundedSender<Sas>,
+        terminator: Receiver<()>,
+    ) -> Self {
         Self {
             socket_path: socket_path.to_string(),
             listener: None,
             slack,
+            verifier,
             terminator,
         }
     }
@@ -107,16 +118,27 @@ impl Listener {
     }
 
     async fn transmit_message(&mut self, message: String) -> Result<(), Error> {
-        let message: Result<Message, serde_json::error::Error> = serde_json::from_str(&message);
+        let message: Result<Packet, serde_json::error::Error> = serde_json::from_str(&message);
         if let Err(e) = message {
             warn!("Could not read request: {}", e);
             return Ok(());
         }
         let message = message.unwrap();
 
-        if let Err(e) = self.slack.send(message).await {
-            warn!("Could not send message: {:#?}", e);
+        match message {
+            Packet::Sas(sas) => {
+                debug!("Local verification received");
+                if let Err(e) = self.verifier.send(sas) {
+                    warn!("Could not send verification input: {:#?}", e);
+                }
+            }
+            Packet::Message(message) => {
+                if let Err(e) = self.slack.send(message).await {
+                    warn!("Could not send message: {:#?}", e);
+                }
+            }
         }
+
         Ok(())
     }
 

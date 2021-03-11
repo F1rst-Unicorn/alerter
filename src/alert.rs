@@ -63,7 +63,9 @@ fn main() {
 }
 
 fn compose_sas_verification(sas: &str) -> Packet {
-    Packet::Sas(Sas { input: sas.to_string() })
+    Packet::Sas(Sas {
+        input: sas.to_string(),
+    })
 }
 
 fn compose_message_from_arguments(args: clap::ArgMatches) -> Packet {

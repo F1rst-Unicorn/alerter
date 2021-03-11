@@ -46,6 +46,7 @@ impl Daemon {
         let (to_matrix, matrix_receiver) = tokio::sync::mpsc::channel(5);
         let (to_spooler, spooler_receiver) = tokio::sync::mpsc::channel(5);
         let (terminator, terminatee) = tokio::sync::broadcast::channel(1);
+        let (to_verifier, verifier_receiver) = tokio::sync::mpsc::unbounded_channel();
 
         let spooler = Spooler::new(&config.spool_path);
 
@@ -56,7 +57,12 @@ impl Daemon {
             terminator.subscribe(),
         );
 
-        let listener = Listener::new(&config.socket_path, to_matrix, terminator.subscribe());
+        let listener = Listener::new(
+            &config.socket_path,
+            to_matrix,
+            to_verifier,
+            terminator.subscribe(),
+        );
 
         let (slack, matrix) = match config.backend {
             Backend::Slack(SlackConfig { webhook }) => {
@@ -77,7 +83,7 @@ impl Daemon {
                     &message_template,
                     matrix_receiver,
                     to_spooler,
-                    terminator.subscribe(),
+                    verifier_receiver,
                 ) {
                     Err(e) => {
                         error!("{}", e);

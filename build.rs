@@ -16,12 +16,10 @@
  */
 extern crate vergen;
 
-use vergen::gen;
-use vergen::ConstantsFlags;
+use vergen::vergen;
+use vergen::Config;
 use vergen::Error;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut flags = ConstantsFlags::all();
-    flags.toggle(ConstantsFlags::REBUILD_ON_HEAD_CHANGE);
-    gen(flags).map_err(Error::into)
+    vergen(Config::default()).map_err(Error::into)
 }

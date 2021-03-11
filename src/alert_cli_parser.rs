@@ -55,7 +55,7 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
             Arg::with_name(FLAG_VERIFY)
                 .short("V")
                 .long("verify")
-                .help("Verify this matrix device")
+                .help("Verify this matrix device. E.g. 1234,1234,1234")
                 .value_name("SAS")
                 .conflicts_with(FLAG_TITLE)
                 .conflicts_with(FLAG_TEXT),

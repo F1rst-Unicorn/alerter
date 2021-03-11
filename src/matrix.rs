@@ -18,13 +18,20 @@
 use std::convert::TryFrom;
 
 use crate::message::Message;
+use crate::message::Sas;
 use crate::util;
 
+use matrix_sdk::events::key::verification::ShortAuthenticationString;
 use matrix_sdk::events::room::message::MessageEventContent;
 use matrix_sdk::events::AnyMessageEventContent;
+use matrix_sdk::events::AnyToDeviceEvent;
 use matrix_sdk::Client;
 use matrix_sdk::ClientConfig;
+use matrix_sdk::LoopCtrl;
+use matrix_sdk::Sas as RemoteSas;
 use matrix_sdk::SyncSettings;
+
+use matrix_sdk_crypto::AcceptSettings;
 
 use thiserror::Error;
 
@@ -34,11 +41,14 @@ use serde::Deserialize;
 
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::sync::mpsc::UnboundedSender;
 
 use tera::Context;
 use tera::Tera;
 
 use log::debug;
+use log::info;
 use log::warn;
 
 pub struct Matrix {
@@ -56,7 +66,7 @@ pub struct Matrix {
 
     send_reporter: Sender<Option<Message>>,
 
-    terminator: tokio::sync::broadcast::Receiver<()>,
+    verifier: Option<UnboundedReceiver<Sas>>,
 }
 
 #[derive(Error, Debug)]
@@ -92,7 +102,7 @@ impl Matrix {
         message_template: &str,
         spooler: Receiver<Message>,
         send_reporter: Sender<Option<Message>>,
-        terminator: tokio::sync::broadcast::Receiver<()>,
+        verifier: UnboundedReceiver<Sas>,
     ) -> Result<Self, Error> {
         let mut iter = user.splitn(2, ':');
         let username = iter.next().ok_or(Error::InvalidUser)?;
@@ -116,7 +126,7 @@ impl Matrix {
             tera,
             spooler,
             send_reporter,
-            terminator,
+            verifier: Some(verifier),
         })
     }
 
@@ -141,7 +151,32 @@ impl Matrix {
 
     pub async fn run(&mut self) {
         let syncer = self.client.clone();
-        tokio::spawn(async move { syncer.sync(SyncSettings::new()).await });
+        let client_for_syncer = syncer.clone();
+
+        let (to_verifier, from_matrix) = tokio::sync::mpsc::unbounded_channel();
+
+        let mut verifier = Verifier {
+            local_receiver: self.verifier.take().unwrap(),
+            remote_receiver: from_matrix,
+        };
+
+        tokio::spawn(async move { verifier.run().await });
+
+        tokio::spawn(async move {
+            let client = client_for_syncer;
+            let client = &client;
+            let to_verifier = to_verifier;
+            let to_verifier_ref = &to_verifier;
+            syncer
+                .sync_with_callback(SyncSettings::new(), |response| async move {
+                    for event in response.to_device.events {
+                        Self::handle_event(&client, event, to_verifier_ref).await;
+                    }
+
+                    LoopCtrl::Continue
+                })
+                .await
+        });
 
         loop {
             tokio::select! {
@@ -161,10 +196,6 @@ impl Matrix {
                         debug!("Matrix shutting down");
                         return;
                     }
-                }
-                _ = self.terminator.recv() => {
-                    debug!("Matrix shutting down");
-                    return;
                 }
             }
         }
@@ -197,10 +228,115 @@ impl Matrix {
         let html = self.tera.render("", &context).map_err(|_| ())?;
 
         Ok(AnyMessageEventContent::RoomMessage(
-            MessageEventContent::Text(
-                matrix_sdk::events::room::message::TextMessageEventContent::html("", html),
-            ),
+            MessageEventContent::text_html("", html),
         ))
+    }
+
+    async fn handle_event(
+        client: &Client,
+        event: AnyToDeviceEvent,
+        channel: &UnboundedSender<RemoteSas>,
+    ) {
+        match event {
+            AnyToDeviceEvent::KeyVerificationStart(e) => {
+                let sas = client
+                    .get_verification(&e.content.transaction_id)
+                    .await
+                    .expect("Sas object wasn't created");
+                info!(
+                    "Starting verification with {} {}",
+                    &sas.other_device().user_id(),
+                    &sas.other_device().device_id()
+                );
+                sas.accept_with_settings(AcceptSettings::with_allowed_methods(vec![
+                    ShortAuthenticationString::Decimal,
+                ]))
+                .await
+                .unwrap();
+            }
+
+            AnyToDeviceEvent::KeyVerificationKey(e) => {
+                let sas = client
+                    .get_verification(&e.content.transaction_id)
+                    .await
+                    .expect("Sas object wasn't created");
+
+                if let Err(e) = channel.send(sas) {
+                    warn!("Failed to send to verifier: {}", e);
+                }
+            }
+
+            AnyToDeviceEvent::KeyVerificationMac(e) => {
+                let sas = client
+                    .get_verification(&e.content.transaction_id)
+                    .await
+                    .expect("Sas object wasn't created");
+
+                if sas.is_done() {
+                    info!(
+                        "Successfully verified device {} {}",
+                        sas.other_device().user_id(),
+                        sas.other_device().device_id(),
+                    );
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+struct Verifier {
+    local_receiver: UnboundedReceiver<Sas>,
+
+    remote_receiver: UnboundedReceiver<RemoteSas>,
+}
+
+impl Verifier {
+    async fn run(&mut self) {
+        loop {
+            match tokio::join!(self.local_receiver.recv(), self.remote_receiver.recv()) {
+                (Some(local_sas), Some(remote_sas)) => {
+                    self.check_equality(local_sas, remote_sas).await;
+                }
+                (None, None) => break,
+                (_, None) => {
+                    warn!("Received no remote SAS");
+                }
+                (None, _) => {
+                    warn!("Received no local SAS");
+                }
+            }
+        }
+    }
+
+    async fn check_equality(&self, local_sas: Sas, remote_sas: RemoteSas) {
+        let remote = match remote_sas.decimals() {
+            None => {
+                warn!("Remote SAS contains no decimals");
+                return;
+            }
+            Some(v) => v,
+        };
+
+        let remote = format!("{},{},{}", remote.0, remote.1, remote.2);
+
+        debug!("Remote: '{}'", remote);
+        debug!("Local: '{}'", local_sas.input);
+
+        if local_sas.input == remote {
+            info!("Verification successful");
+            if let Err(e) = remote_sas.confirm().await {
+                warn!("Failed to tell remote about successful verification: {}", e);
+            }
+        } else {
+            warn!(
+                "Verification failed. Local: '{}'. Remote: '{}'",
+                local_sas.input, remote
+            );
+            if let Err(e) = remote_sas.cancel().await {
+                warn!("Failed to tell remote about failed verification: {}", e);
+            }
+        }
     }
 }
 

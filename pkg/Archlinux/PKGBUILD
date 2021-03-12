@@ -1,8 +1,8 @@
 # Maintainer: Jan Veen <jan.veen æt posteo.de>
 pkgname=alerter
-pkgver=1.0.8
+pkgver=2.0.0
 pkgrel=1
-pkgdesc="Send messages to Slack"
+pkgdesc="Send messages to a chat service"
 arch=('x86_64')
 url="https://gitlab.com/veenj/$pkgname"
 license=('GPL3')

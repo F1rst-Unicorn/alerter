@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [2.0.0]
+
+### Added
+
+* Support for the [Matrix Protocol](https://matrix.org/). This is a breaking
+  change for the configuration file `alerter.yml`.
+
 ## [1.0.8]
 
 ### Fixed

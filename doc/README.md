@@ -58,3 +58,17 @@ room ID to send to if `alert` doesn't set one.
 `message_template` is the HTML template used to render the message. It uses
 the [tera](https://tera.netlify.app/) template engine. A sane default is
 provided but you are free to change it.
+
+#### SAS Client Verification
+
+To verify that the clients have received the correct key material matrix offers
+a verification process. To perform verification proceed as follows:
+
+1. Start the verification process from a different device
+
+2. When that device displays the number code in form `1234 1234 1234`, on the
+   machine running `alerter` run `alert -V 1234,1234,1234` (replacing the actual
+   numbers).
+
+3. Accept the verification on the other device (`alerter` will abort the request
+   if the numbers don't match).

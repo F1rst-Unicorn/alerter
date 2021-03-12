@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [2.0.1]
+
 ### Fixed
 
 * `alert` client now only requires the `socket_path` in the config file again.

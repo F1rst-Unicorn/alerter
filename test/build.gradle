@@ -35,6 +35,7 @@ tasks.withType(JavaCompile) {
 test {
     useJUnitPlatform()
     systemProperty 'de.njsm.alerter.config', "$projectDir/src/test/resources/config.yml"
+    systemProperty 'de.njsm.alerter.client.config', "$projectDir/src/test/resources/client_config.yml"
     systemProperty 'de.njsm.alerter.logconfig', "$projectDir/src/test/resources/log4rs.yml"
     systemProperty 'de.njsm.alerter.client.binary', "$projectDir/../target/debug/alert"
     systemProperty 'de.njsm.alerter.server.binary', "$projectDir/../target/debug/alerter"

@@ -27,6 +27,8 @@ public class Config {
 
     public static final String CONFIG_PATH = "de.njsm.alerter.config";
 
+    public static final String CLIENT_CONFIG_PATH = "de.njsm.alerter.client.config";
+
     public static final String LOG_CONFIG_PATH = "de.njsm.alerter.logconfig";
 
     public static final String SOCKET_PATH = "alert.sock";
@@ -41,6 +43,10 @@ public class Config {
 
     public static String getConfigPath() {
         return System.getProperty(CONFIG_PATH);
+    }
+
+    public static String getClientConfigPath() {
+        return System.getProperty(CLIENT_CONFIG_PATH);
     }
 
     public static String getLogConfigPath() {

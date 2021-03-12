@@ -66,7 +66,7 @@ public class Alert {
 
         command.add(getClientBinaryPath());
         command.add("-C");
-        command.add(getConfigPath());
+        command.add(getClientConfigPath());
         command.add("-v");
         command.add(getLogConfigPath());
 

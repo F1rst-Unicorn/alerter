@@ -21,6 +21,7 @@ pub mod logging;
 pub mod message;
 pub mod util;
 
+use crate::config::ClientConfig;
 use crate::message::Level;
 use crate::message::Message;
 use crate::message::Packet;
@@ -51,7 +52,7 @@ fn main() {
         .expect("Missing default value in alert_cli_parser");
     debug!("Config is at {}", config_path);
 
-    let config = config::parse_config(config_path);
+    let config = config::parse_config::<ClientConfig>(config_path);
 
     let packet = if let Some(sas) = arguments.value_of(alert_cli_parser::FLAG_VERIFY) {
         compose_sas_verification(sas)

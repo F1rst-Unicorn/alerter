@@ -31,6 +31,7 @@ pub mod systemd;
 pub mod terminator;
 pub mod util;
 
+use config::Config;
 use daemon::Daemon;
 
 use log::debug;
@@ -51,7 +52,7 @@ fn main() {
         .expect("Missing default value in cli_parser");
     debug!("Config is at {}", config_path);
 
-    let config = config::parse_config(config_path);
+    let config = config::parse_config::<Config>(config_path);
 
     match Daemon::new(config) {
         None => {}

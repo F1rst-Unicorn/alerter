@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+* `alert` client now only requires the `socket_path` in the config file again.
+
 ### Added
 
 * Documented SAS client verification.

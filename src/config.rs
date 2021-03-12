@@ -20,11 +20,17 @@ use std::io;
 use std::io::Read;
 use std::process::exit;
 
+use serde::de::DeserializeOwned;
 use serde_derive::Deserialize;
 
 use log::error;
 
 const EXIT_CODE: i32 = 1;
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct ClientConfig {
+    pub socket_path: String,
+}
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Config {
@@ -60,7 +66,7 @@ pub struct Matrix {
     pub message_template: String,
 }
 
-pub fn parse_config(file_path: &str) -> Config {
+pub fn parse_config<T: DeserializeOwned>(file_path: &str) -> T {
     let raw_config = match read_file(file_path) {
         Err(e) => {
             error!("Could not read config: {}", e);

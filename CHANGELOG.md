@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Maintenance
+
+* Update dependencies
+
 ## [2.0.1]
 
 ### Fixed

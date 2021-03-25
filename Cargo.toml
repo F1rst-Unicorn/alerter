@@ -56,11 +56,11 @@ version = "1.2.0"
 features = ["full"]
 
 [dependencies.matrix-sdk]
-git = "https://github.com/f1rst-unicorn/matrix-rust-sdk.git"
+git = "https://github.com/matrix-org/matrix-rust-sdk.git"
 branch = "master"
 
 [dependencies.matrix-sdk-crypto]
-git = "https://github.com/f1rst-unicorn/matrix-rust-sdk.git"
+git = "https://github.com/matrix-org/matrix-rust-sdk.git"
 branch = "master"
 
 [build-dependencies]

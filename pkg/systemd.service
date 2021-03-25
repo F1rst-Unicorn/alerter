@@ -9,6 +9,7 @@ User=alerter
 Group=alerter
 WorkingDirectory=/var/lib/alerter
 Restart=on-failure
+RestartSec=5
 WatchdogSec=5
 WatchdogSignal=SIGTERM
 

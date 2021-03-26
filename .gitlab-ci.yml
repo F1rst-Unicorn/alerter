@@ -35,6 +35,10 @@ build-debug:
     paths:
       - target
       - .cargo
+  artifacts:
+    paths:
+      - target/debug/alert
+      - target/debug/alerter
 
 build-release:
   stage: build

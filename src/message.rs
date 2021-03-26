@@ -58,24 +58,28 @@ pub struct Message {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Level {
-    OK,
-    WARN,
-    ERROR,
-    UNKNOWN,
+    #[serde(rename = "OK")]
+    Ok,
+    #[serde(rename = "WARN")]
+    Warn,
+    #[serde(rename = "ERROR")]
+    Error,
+    #[serde(rename = "UNKNOWN")]
+    Unknown,
 }
 
 impl Default for Level {
     fn default() -> Self {
-        Level::UNKNOWN
+        Level::Unknown
     }
 }
 
 impl From<Level> for String {
     fn from(v: Level) -> Self {
         match v {
-            Level::OK => "#44bb77",
-            Level::WARN => "#ffaa44",
-            Level::ERROR => "#ff5566",
+            Level::Ok => "#44bb77",
+            Level::Warn => "#ffaa44",
+            Level::Error => "#ff5566",
             _ => "#aa44ff",
         }
         .to_string()

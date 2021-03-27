@@ -137,7 +137,7 @@ archlinux:
   stage: package
   image: archlinux:latest
   script:
-    - pacman -Syu --noconfirm sudo binutils fakeroot cmake
+    - pacman -Syu --noconfirm sudo binutils fakeroot cmake gcc make
     - cd pkg/Archlinux
     # patch makepkg so it runs as root
     - sed -i 's/EUID == 0/1 == 0/g' /usr/bin/makepkg

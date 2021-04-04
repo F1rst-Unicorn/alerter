@@ -1,7 +1,7 @@
 # Maintainer: Jan Veen <jan.veen æt posteo.de>
 pkgname=alerter
-pkgver=2.0.1
-pkgrel=2
+pkgver=2.0.2
+pkgrel=1
 pkgdesc="Send messages to a chat service"
 arch=('x86_64')
 url="https://gitlab.com/veenj/$pkgname"

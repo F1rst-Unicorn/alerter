@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [2.0.2]
+
 ### Maintenance
+
+* Increase timeout for server replies to lower system load
 
 * Update dependencies
 

@@ -25,6 +25,7 @@ use matrix_sdk::events::key::verification::ShortAuthenticationString;
 use matrix_sdk::events::room::message::MessageEventContent;
 use matrix_sdk::events::AnyMessageEventContent;
 use matrix_sdk::events::AnyToDeviceEvent;
+use matrix_sdk::instant::Duration;
 use matrix_sdk::Client;
 use matrix_sdk::ClientConfig;
 use matrix_sdk::LoopCtrl;
@@ -167,8 +168,10 @@ impl Matrix {
             let client = &client;
             let to_verifier = to_verifier;
             let to_verifier_ref = &to_verifier;
+            let settings = SyncSettings::new().timeout(Duration::from_secs(300));
+
             syncer
-                .sync_with_callback(SyncSettings::new(), |response| async move {
+                .sync_with_callback(settings, |response| async move {
                     for event in response.to_device.events {
                         Self::handle_event(&client, event, to_verifier_ref).await;
                     }

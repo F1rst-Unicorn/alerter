@@ -16,10 +16,10 @@
  */
 extern crate vergen;
 
+use anyhow::Result;
 use vergen::vergen;
 use vergen::Config;
-use vergen::Error;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    vergen(Config::default()).map_err(Error::into)
+fn main() -> Result<()> {
+    vergen(Config::default())
 }

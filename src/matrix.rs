@@ -173,7 +173,7 @@ impl Matrix {
             syncer
                 .sync_with_callback(settings, |response| async move {
                     for event in response.to_device.events {
-                        Self::handle_event(&client, event, to_verifier_ref).await;
+                        Self::handle_event(client, event, to_verifier_ref).await;
                     }
 
                     LoopCtrl::Continue

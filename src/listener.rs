@@ -164,7 +164,7 @@ impl Listener {
             let raw_path = CString::new(socket_path).expect("could not build cstring");
             let res = libc::chmod(raw_path.into_raw(), 0o777);
             if res == -1 {
-                return Err(nix::Error::Sys(errno::Errno::from_i32(errno::errno())).into());
+                return Err(errno::Errno::from_i32(errno::errno()).into());
             }
         }
 

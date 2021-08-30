@@ -26,10 +26,11 @@ use matrix_sdk::events::room::message::MessageEventContent;
 use matrix_sdk::events::AnyMessageEventContent;
 use matrix_sdk::events::AnyToDeviceEvent;
 use matrix_sdk::instant::Duration;
+use matrix_sdk::verification::SasVerification as RemoteSas;
+use matrix_sdk::verification::Verification;
 use matrix_sdk::Client;
 use matrix_sdk::ClientConfig;
 use matrix_sdk::LoopCtrl;
-use matrix_sdk::Sas as RemoteSas;
 use matrix_sdk::SyncSettings;
 
 use matrix_sdk_crypto::AcceptSettings;
@@ -172,7 +173,14 @@ impl Matrix {
 
             syncer
                 .sync_with_callback(settings, |response| async move {
-                    for event in response.to_device.events {
+                    for raw_event in response.to_device.events {
+                        let event = match raw_event.deserialize() {
+                            Err(e) => {
+                                warn!("failed to deserialise event: {}", e);
+                                continue;
+                            }
+                            Ok(v) => v,
+                        };
                         Self::handle_event(client, event, to_verifier_ref).await;
                     }
 
@@ -242,45 +250,46 @@ impl Matrix {
     ) {
         match event {
             AnyToDeviceEvent::KeyVerificationStart(e) => {
-                let sas = client
-                    .get_verification(&e.content.transaction_id)
+                if let Some(Verification::SasV1(sas)) = client
+                    .get_verification(&e.sender, &e.content.transaction_id)
                     .await
-                    .expect("Sas object wasn't created");
-                info!(
-                    "Starting verification with {} {}",
-                    &sas.other_device().user_id(),
-                    &sas.other_device().device_id()
-                );
-                sas.accept_with_settings(AcceptSettings::with_allowed_methods(vec![
-                    ShortAuthenticationString::Decimal,
-                ]))
-                .await
-                .unwrap();
+                {
+                    info!(
+                        "Starting verification with {} {}",
+                        &sas.other_device().user_id(),
+                        &sas.other_device().device_id()
+                    );
+                    sas.accept_with_settings(AcceptSettings::with_allowed_methods(vec![
+                        ShortAuthenticationString::Decimal,
+                    ]))
+                    .await
+                    .unwrap();
+                }
             }
 
             AnyToDeviceEvent::KeyVerificationKey(e) => {
-                let sas = client
-                    .get_verification(&e.content.transaction_id)
+                if let Some(Verification::SasV1(sas)) = client
+                    .get_verification(&e.sender, &e.content.transaction_id)
                     .await
-                    .expect("Sas object wasn't created");
-
-                if let Err(e) = channel.send(sas) {
-                    warn!("Failed to send to verifier: {}", e);
+                {
+                    if let Err(e) = channel.send(sas) {
+                        warn!("Failed to send to verifier: {}", e);
+                    }
                 }
             }
 
             AnyToDeviceEvent::KeyVerificationMac(e) => {
-                let sas = client
-                    .get_verification(&e.content.transaction_id)
+                if let Some(Verification::SasV1(sas)) = client
+                    .get_verification(&e.sender, &e.content.transaction_id)
                     .await
-                    .expect("Sas object wasn't created");
-
-                if sas.is_done() {
-                    info!(
-                        "Successfully verified device {} {}",
-                        sas.other_device().user_id(),
-                        sas.other_device().device_id(),
-                    );
+                {
+                    if sas.is_done() {
+                        info!(
+                            "Successfully verified device {} {}",
+                            sas.other_device().user_id(),
+                            sas.other_device().device_id(),
+                        );
+                    }
                 }
             }
             _ => {}

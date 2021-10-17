@@ -21,10 +21,10 @@ use crate::message::Message;
 use crate::message::Sas;
 use crate::util;
 
-use matrix_sdk::events::key::verification::ShortAuthenticationString;
-use matrix_sdk::events::room::message::MessageEventContent;
-use matrix_sdk::events::AnyMessageEventContent;
-use matrix_sdk::events::AnyToDeviceEvent;
+use matrix_sdk::ruma::events::key::verification::ShortAuthenticationString;
+use matrix_sdk::ruma::events::room::message::MessageEventContent;
+use matrix_sdk::ruma::events::AnyMessageEventContent;
+use matrix_sdk::ruma::events::AnyToDeviceEvent;
 use matrix_sdk::instant::Duration;
 use matrix_sdk::verification::SasVerification as RemoteSas;
 use matrix_sdk::verification::Verification;

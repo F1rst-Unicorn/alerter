@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Maintenance
+
+* Update library dependencies
+
 ## [2.0.3]
 
 * Fix linter issues

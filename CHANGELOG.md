@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Maintenance
 
+* Update Rust Edition 2021
+
 * Update library dependencies
 
 ## [2.0.3]

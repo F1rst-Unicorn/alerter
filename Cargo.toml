@@ -3,7 +3,7 @@ name = "alerter"
 description = "Send messages to Slack"
 version = "2.0.3"
 authors = ["jan.veen@posteo.de"]
-edition = "2018"
+edition = "2021"
 license = "GPL-3.0-or-later"
 build = "build.rs"
 

@@ -21,7 +21,7 @@ opt-level = "s"
 codegen-units = 1
 
 [dependencies]
-clap = "2.33.3"
+clap = "3.0.10"
 log = "0.4.11"
 serde_derive = "1.0.115"
 serde_yaml = "0.8.13"
@@ -29,9 +29,9 @@ serde_json = "1.0.57"
 nix = "0.23"
 chrono = "0.4.15"
 libc = "0.2.76"
-systemd = "0.9"
+systemd = "0.10"
 url = "2.1.1"
-tracing-subscriber = "0.2.15"
+tracing-subscriber = "0.3.6"
 thiserror = "1.0.24"
 tera = "1.5.0"
 matrix-sdk = "0.4"
@@ -57,5 +57,5 @@ version = "1.2.0"
 features = ["full"]
 
 [build-dependencies]
-vergen = "5"
+vergen = "6"
 anyhow = "1"

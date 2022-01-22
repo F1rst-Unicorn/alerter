@@ -29,7 +29,7 @@ pub const FLAG_LEVEL: &str = "LEVEL";
 pub const FLAG_FIELD: &str = "FIELD";
 pub const FLAG_VERIFY: &str = "VERIFY";
 
-pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
+pub fn parse_arguments() -> clap::ArgMatches {
     App::new("alert")
         .version(concat!(
             env!("CARGO_PKG_VERSION"),
@@ -40,20 +40,20 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
         ))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
-            Arg::with_name(FLAG_TITLE)
+            Arg::new(FLAG_TITLE)
                 .help("The title of the message")
                 .value_name("TITLE")
-                .required_unless(FLAG_VERIFY),
+                .required_unless_present(FLAG_VERIFY),
         )
         .arg(
-            Arg::with_name(FLAG_TEXT)
+            Arg::new(FLAG_TEXT)
                 .help("The content of the message")
                 .value_name("TEXT")
-                .required_unless(FLAG_VERIFY),
+                .required_unless_present(FLAG_VERIFY),
         )
         .arg(
-            Arg::with_name(FLAG_VERIFY)
-                .short("V")
+            Arg::new(FLAG_VERIFY)
+                .short('V')
                 .long("verify")
                 .help("Verify this matrix device. E.g. 1234,1234,1234")
                 .value_name("SAS")
@@ -61,8 +61,8 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
                 .conflicts_with(FLAG_TEXT),
         )
         .arg(
-            Arg::with_name(FLAG_CONFIG)
-                .short("C")
+            Arg::new(FLAG_CONFIG)
+                .short('C')
                 .long(FLAG_CONFIG)
                 .value_name("PATH")
                 .help("The config file or directory to run with")
@@ -70,38 +70,38 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
                 .default_value("/etc/alerter/alert.yml"),
         )
         .arg(
-            Arg::with_name(FLAG_CHANNEL)
-                .short("c")
+            Arg::new(FLAG_CHANNEL)
+                .short('c')
                 .long("channel")
                 .value_name("channel")
                 .help("The channel to send to"),
         )
         .arg(
-            Arg::with_name(FLAG_LEVEL)
-                .short("l")
+            Arg::new(FLAG_LEVEL)
+                .short('l')
                 .long("level")
                 .value_name("level")
                 .help("One of OK, WARN, ERROR, UNKNOWN")
                 .default_value("UNKNOWN"),
         )
         .arg(
-            Arg::with_name(FLAG_TITLE_LINK)
-                .short("t")
+            Arg::new(FLAG_TITLE_LINK)
+                .short('t')
                 .long("title-link")
                 .value_name("link")
                 .help("A link to further information"),
         )
         .arg(
-            Arg::with_name(FLAG_FIELD)
-                .short("f")
+            Arg::new(FLAG_FIELD)
+                .short('f')
                 .long("field")
                 .value_name("field")
                 .help("More key-value pairs as key:value")
-                .multiple(true),
+                .multiple_occurrences(true),
         )
         .arg(
-            Arg::with_name(FLAG_LOG_CONFIG)
-                .short("v")
+            Arg::new(FLAG_LOG_CONFIG)
+                .short('v')
                 .long(FLAG_LOG_CONFIG)
                 .help("The log4rs logging configuration")
                 .takes_value(true)

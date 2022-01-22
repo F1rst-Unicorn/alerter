@@ -21,7 +21,7 @@ use clap::Arg;
 pub const FLAG_LOG_CONFIG: &str = "log-config";
 pub const FLAG_CONFIG: &str = "config";
 
-pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
+pub fn parse_arguments() -> clap::ArgMatches {
     App::new("alerter")
         .version(concat!(
             env!("CARGO_PKG_VERSION"),
@@ -32,8 +32,8 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
         ))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
-            Arg::with_name("config")
-                .short("c")
+            Arg::new("config")
+                .short('c')
                 .long(FLAG_CONFIG)
                 .value_name("PATH")
                 .help("The config file or directory to run with")
@@ -41,8 +41,8 @@ pub fn parse_arguments<'a>() -> clap::ArgMatches<'a> {
                 .default_value("/var/lib/alerter/alerter.yml"),
         )
         .arg(
-            Arg::with_name(FLAG_LOG_CONFIG)
-                .short("v")
+            Arg::new(FLAG_LOG_CONFIG)
+                .short('v')
                 .long(FLAG_LOG_CONFIG)
                 .help("The log4rs logging configuration")
                 .takes_value(true)

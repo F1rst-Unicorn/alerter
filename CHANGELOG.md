@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [2.0.4]
+
 ### Fixed
 
 * Fix SAS verification. This was broken for unknown reasons.

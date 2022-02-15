@@ -16,6 +16,9 @@
  */
 
 use std::convert::TryFrom;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
 use crate::message::Message;
 use crate::message::Sas;
@@ -23,8 +26,12 @@ use crate::util;
 
 use matrix_sdk::instant::Duration;
 use matrix_sdk::ruma::events::key::verification::ShortAuthenticationString;
+use matrix_sdk::ruma::events::key::verification::VerificationMethod;
 use matrix_sdk::ruma::events::room::message::MessageEventContent;
+use matrix_sdk::ruma::events::room::message::MessageType;
 use matrix_sdk::ruma::events::AnyMessageEventContent;
+use matrix_sdk::ruma::events::AnySyncMessageEvent;
+use matrix_sdk::ruma::events::AnySyncRoomEvent;
 use matrix_sdk::ruma::events::AnyToDeviceEvent;
 use matrix_sdk::verification::SasVerification as RemoteSas;
 use matrix_sdk::verification::Verification;
@@ -51,6 +58,7 @@ use tera::Tera;
 
 use log::debug;
 use log::info;
+use log::trace;
 use log::warn;
 
 pub struct Matrix {
@@ -171,6 +179,9 @@ impl Matrix {
             let to_verifier_ref = &to_verifier;
             let settings = SyncSettings::new().timeout(Duration::from_secs(300));
 
+            let initial_call_flag = Arc::new(AtomicBool::from(true));
+            let initial_call_flag_ref = &initial_call_flag;
+
             syncer
                 .sync_with_callback(settings, |response| async move {
                     for raw_event in response.to_device.events {
@@ -181,8 +192,23 @@ impl Matrix {
                             }
                             Ok(v) => v,
                         };
-                        Self::handle_event(client, event, to_verifier_ref).await;
+                        Self::handle_to_device_event(client, event, to_verifier_ref).await;
                     }
+
+                    if !initial_call_flag_ref.load(Ordering::SeqCst) {
+                        for (_room_id, room_info) in response.rooms.join {
+                            for event in room_info
+                                .timeline
+                                .events
+                                .iter()
+                                .filter_map(|e| e.event.deserialize().ok())
+                            {
+                                Self::handle_room_event(client, event, to_verifier_ref).await;
+                            }
+                        }
+                    }
+
+                    initial_call_flag_ref.store(false, Ordering::SeqCst);
 
                     LoopCtrl::Continue
                 })
@@ -243,56 +269,148 @@ impl Matrix {
         ))
     }
 
-    async fn handle_event(
+    async fn handle_to_device_event(
         client: &Client,
         event: AnyToDeviceEvent,
         channel: &UnboundedSender<RemoteSas>,
     ) {
         match event {
+            AnyToDeviceEvent::KeyVerificationRequest(e) => {
+                debug!("ToDevice Verification requested");
+                match client
+                    .get_verification_request(&e.sender, &e.content.transaction_id)
+                    .await
+                {
+                    Some(request) => {
+                        info!("Starting verification with {}", request.other_user_id());
+                        request
+                            .accept_with_methods(vec![VerificationMethod::SasV1])
+                            .await
+                            .unwrap();
+                    }
+                    _ => debug!("No verification request found"),
+                }
+            }
             AnyToDeviceEvent::KeyVerificationStart(e) => {
-                if let Some(Verification::SasV1(sas)) = client
+                debug!("ToDevice Verification started");
+                match client
                     .get_verification(&e.sender, &e.content.transaction_id)
                     .await
                 {
-                    info!(
-                        "Starting verification with {} {}",
-                        &sas.other_device().user_id(),
-                        &sas.other_device().device_id()
-                    );
-                    sas.accept_with_settings(AcceptSettings::with_allowed_methods(vec![
-                        ShortAuthenticationString::Decimal,
-                    ]))
-                    .await
-                    .unwrap();
+                    Some(Verification::SasV1(sas)) => {
+                        info!(
+                            "Starting verification with {} {}",
+                            &sas.other_device().user_id(),
+                            &sas.other_device().device_id()
+                        );
+                        sas.accept_with_settings(AcceptSettings::with_allowed_methods(vec![
+                            ShortAuthenticationString::Decimal,
+                        ]))
+                        .await
+                        .unwrap();
+                    }
+                    v => debug!("Unknown variant of KeyVerificationStart: {:#?}", v),
                 }
             }
 
             AnyToDeviceEvent::KeyVerificationKey(e) => {
-                if let Some(Verification::SasV1(sas)) = client
+                debug!("ToDevice Verification key obtained");
+                match client
                     .get_verification(&e.sender, &e.content.transaction_id)
                     .await
                 {
-                    if let Err(e) = channel.send(sas) {
-                        warn!("Failed to send to verifier: {}", e);
+                    Some(Verification::SasV1(sas)) => {
+                        if let Err(e) = channel.send(sas) {
+                            warn!("Failed to send to verifier: {}", e);
+                        }
                     }
+                    v => debug!("Unknown variant of KeyVerificationKey: {:#?}", v),
                 }
             }
 
             AnyToDeviceEvent::KeyVerificationMac(e) => {
-                if let Some(Verification::SasV1(sas)) = client
+                debug!("ToDevice Verification mac obtained");
+                match client
                     .get_verification(&e.sender, &e.content.transaction_id)
                     .await
                 {
-                    if sas.is_done() {
-                        info!(
-                            "Successfully verified device {} {}",
-                            sas.other_device().user_id(),
-                            sas.other_device().device_id(),
-                        );
+                    Some(Verification::SasV1(sas)) => {
+                        if sas.is_done() {
+                            info!(
+                                "Successfully verified device {} {}",
+                                sas.other_device().user_id(),
+                                sas.other_device().device_id(),
+                            );
+                        }
                     }
+                    v => debug!("Unknown variant of KeyVerificationMac: {:#?}", v),
                 }
             }
-            _ => {}
+            v => trace!("Unknown event: {:#?}", v),
+        }
+    }
+
+    async fn handle_room_event(
+        client: &Client,
+        event: AnySyncRoomEvent,
+        channel: &UnboundedSender<RemoteSas>,
+    ) {
+        if let AnySyncRoomEvent::Message(event) = event {
+            match event {
+                AnySyncMessageEvent::RoomMessage(m) => {
+                    if let MessageType::VerificationRequest(_) = &m.content.msgtype {
+                        debug!("SyncRoom Verification requested");
+                        match client
+                            .get_verification_request(&m.sender, &m.event_id)
+                            .await
+                        {
+                            Some(request) => {
+                                info!("Starting verification with {}", request.other_user_id());
+                                request
+                                    .accept_with_methods(vec![VerificationMethod::SasV1])
+                                    .await
+                                    .unwrap();
+                            }
+                            _ => debug!("No verification request found"),
+                        }
+                    } else {
+                        debug!("Got unknown room message {:#?}", m);
+                    }
+                }
+                AnySyncMessageEvent::KeyVerificationKey(e) => {
+                    debug!("SyncRoom Verification key obtained");
+                    match client
+                        .get_verification(&e.sender, e.content.relates_to.event_id.as_str())
+                        .await
+                    {
+                        Some(Verification::SasV1(sas)) => {
+                            if let Err(e) = channel.send(sas) {
+                                warn!("Failed to send to verifier: {}", e);
+                            }
+                        }
+                        _ => debug!("No verification information found"),
+                    }
+                }
+                AnySyncMessageEvent::KeyVerificationMac(e) => {
+                    debug!("SyncRoom Verification mac obtained");
+                    match client
+                        .get_verification(&e.sender, e.content.relates_to.event_id.as_str())
+                        .await
+                    {
+                        Some(Verification::SasV1(sas)) => {
+                            if sas.is_done() {
+                                info!(
+                                    "Successfully verified device {} {}",
+                                    sas.other_device().user_id(),
+                                    sas.other_device().device_id(),
+                                );
+                            }
+                        }
+                        _ => debug!("No verification information found"),
+                    }
+                }
+                e => debug!("Unknown room event {:#?}", e),
+            }
         }
     }
 }

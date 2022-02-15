@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+* Fix SAS verification. This was broken for unknown reasons.
+
 ### Maintenance
 
 * Update Rust Edition 2021

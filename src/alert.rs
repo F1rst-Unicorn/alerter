@@ -88,8 +88,7 @@ fn compose_message_from_arguments(args: clap::ArgMatches) -> Packet {
         level: args
             .value_of(alert_cli_parser::FLAG_LEVEL)
             .map(serde_yaml::from_str::<Level>)
-            .map(Result::ok)
-            .flatten()
+            .and_then(Result::ok)
             .unwrap_or_default(),
 
         link: args

@@ -117,7 +117,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-* System integration ([#2](https://gitlab.com/veenj/alerter/issues/2))
+* System integration ([#2](https://j.njsm.de/git/veenj/alerter/issues/2))
 
 * Reliable message transmission
   ([#1](https.//gitlab.com/veenj/alerter/issues/1))

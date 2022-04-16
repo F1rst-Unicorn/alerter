@@ -120,6 +120,6 @@ All notable changes to this project will be documented in this file.
 * System integration ([#2](https://j.njsm.de/git/veenj/alerter/issues/2))
 
 * Reliable message transmission
-  ([#1](https.//gitlab.com/veenj/alerter/issues/1))
+  ([#1](https://j.njsm.de/git/veenj/alerter/issues/1))
 
-* Documentation ([#3](https.//gitlab.com/veenj/alerter/issues/3))
+* Documentation ([#3](https://j.njsm.de/git/veenj/alerter/issues/3))

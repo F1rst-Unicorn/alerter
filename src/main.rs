@@ -54,13 +54,9 @@ fn main() {
 
     let config = config::parse_config::<Config>(config_path);
 
-    match Daemon::new(config) {
-        None => {}
-        Some(daemon) => match daemon.run() {
-            Err(e) => {
-                error!("Failed to start runtime: {}", e);
-            }
-            Ok(()) => {}
-        },
-    };
+    if let Some(daemon) = Daemon::new(config) {
+        if let Err(e) = daemon.run() {
+            error!("Failed to start runtime: {}", e);
+        }
+    }
 }

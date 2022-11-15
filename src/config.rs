@@ -27,12 +27,12 @@ use log::error;
 
 const EXIT_CODE: i32 = 1;
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct ClientConfig {
     pub socket_path: String,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Config {
     pub socket_path: String,
 
@@ -41,7 +41,7 @@ pub struct Config {
     pub backend: Backend,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub enum Backend {
     #[serde(alias = "slack")]
     Slack(Slack),
@@ -50,12 +50,12 @@ pub enum Backend {
     Matrix(Matrix),
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Slack {
     pub webhook: String,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct Matrix {
     pub user: String,
 

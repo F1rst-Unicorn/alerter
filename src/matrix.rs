@@ -484,7 +484,7 @@ struct Server {
 pub fn resolve_well_known(matrix_id: &str) -> Result<String, Error> {
     let url = format!("https://{}/.well-known/matrix/client", matrix_id);
 
-    let response = reqwest::blocking::get(&url)?.json::<WellKnown>()?;
+    let response = reqwest::blocking::get(url)?.json::<WellKnown>()?;
 
     Ok(response.homeserver_url.base_url)
 }

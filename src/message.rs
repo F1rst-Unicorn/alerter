@@ -56,7 +56,7 @@ pub struct Message {
     pub version: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub enum Level {
     #[serde(rename = "OK")]
     Ok,
@@ -64,14 +64,9 @@ pub enum Level {
     Warn,
     #[serde(rename = "ERROR")]
     Error,
+    #[default]
     #[serde(rename = "UNKNOWN")]
     Unknown,
-}
-
-impl Default for Level {
-    fn default() -> Self {
-        Level::Unknown
-    }
 }
 
 impl From<Level> for String {
